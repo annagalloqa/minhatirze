@@ -740,11 +740,15 @@ function installApp() {
 }
 
 function updateCalendarTips() {
-  const tip = '💡 Após agendar, toque em <strong>"Abrir no Calendário do iPhone"</strong> para salvar o lembrete direto no app Calendário.';
   const t1 = document.getElementById('calendarTip');
   const t2 = document.getElementById('calendarTipResume');
-  if (t1) t1.innerHTML = tip;
-  if (t2) t2.innerHTML = 'Após salvar uma aplicação, toque em <strong>"Agendar Próxima Dose"</strong> e depois em <strong>"Abrir no Calendário do iPhone"</strong>. O evento aparece direto no seu app Calendário com lembrete! 📱';
+  if (isIOS) {
+    if (t1) t1.innerHTML = '💡 Após agendar, toque em <strong>"Abrir no Calendário do iPhone"</strong> para salvar o lembrete direto no app Calendário.';
+    if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong> → <strong>"Abrir no Calendário do iPhone"</strong>. Na tela que abrir: escolha <strong>"Pessoal"</strong> e toque em <strong>✓ Adicionar</strong>. 📱';
+  } else {
+    if (t1) t1.innerHTML = '💡 Toque em <strong>"Agendar Próxima Dose"</strong> — o Google Calendar abre com o evento preenchido. É só tocar em <strong>Salvar</strong>!';
+    if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong>. O Google Calendar abre com data e lembrete — toque em <strong>Salvar</strong> e pronto! 🎉';
+  }
 }
 
 // ======= LOGIN =======
@@ -914,26 +918,17 @@ function initApp() {
   updateCalendarTips();
   updateUIConverter();
   setTimeout(() => { drawWeightChart(); updateHeaderDose(); updateSummary(); }, 100);
-  // Notifications
+  // Notifications + Calendar return detection
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') updateNextDoseBadge();
+    if (document.visibilityState === 'visible') {
+      updateNextDoseBadge();
+      // Android: volta da aba do Google Calendar
+      setTimeout(checkCalendarReturn, 400);
+    }
   });
-  // pageshow + focus: detecta retorno da janelinha do Calendário (iOS)
+  // iOS: fecha janelinha do Calendário
   window.addEventListener('pageshow', () => checkCalendarReturn());
-  window.addEventListener('focus', () => {
-    // Pequeno delay — a janelinha do Calendário fecha e o foco volta
-    setTimeout(checkCalendarReturn, 600);
-  });
-
-  function checkCalendarReturn() {
-    if (!window._tirzeCalendarPending) return;
-    window._tirzeCalendarPending = false;
-    const link = document.getElementById('calendarNativeLink');
-    const hint = document.getElementById('calendarIosHint');
-    if (link) link.style.display = 'none';
-    if (hint) hint.style.display = 'none';
-    showToast('✅ Pronto! Evento salvo no Calendário 📅');
-  }
+  window.addEventListener('focus', () => setTimeout(checkCalendarReturn, 600));
 }
 
 
@@ -1132,6 +1127,17 @@ function saveApplication() {
   updateSummary();
 }
 
+// ======= CALENDAR CONFIRMATION =======
+function checkCalendarReturn() {
+  if (!window._tirzeCalendarPending) return;
+  window._tirzeCalendarPending = false;
+  const link = document.getElementById('calendarNativeLink');
+  const hint = document.getElementById('calendarIosHint');
+  if (link) link.style.display = 'none';
+  if (hint) hint.style.display = 'none';
+  showToast('✅ Pronto! Evento salvo no Calendário 📅');
+}
+
 // ======= CALENDAR ICS =======
 function generateICS(dateTimeStr) {
   const dt = new Date(dateTimeStr);
@@ -1175,20 +1181,23 @@ function openCalendarEvent(dateTimeStr) {
     'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
   const dtEnd = new Date(dt.getTime() + 30 * 60000);
 
+  // Flag para mostrar confirmação depois
+  window._tirzeCalendarPending = true;
+
   if (isIOS) {
-    // iOS: criar link visível com .ics — usuário toca e Safari abre o Calendário nativo
+    // iOS: criar link visível com .ics — usuário toca e abre Calendário nativo
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.getElementById('calendarNativeLink');
     link.href = url;
     link.style.display = 'block';
     link.textContent = '📅 Abrir no Calendário do iPhone';
-    // Mostra instrução de como salvar
+    // Instrução de como salvar
     const hint = document.getElementById('calendarIosHint');
     if (hint) hint.style.display = 'block';
-    // Flag: quando voltar do Calendário, mostra confirmação
-    window._tirzeCalendarPending = true;
-    showToast('📅 Toque no botão verde e siga a instrução abaixo ⬇️');
+    showToast('📅 Toque no botão verde e siga a instrução ⬇️');
+    // Timer: assume que o usuário salvou em ~5 segundos
+    setTimeout(checkCalendarReturn, 5000);
     return;
   }
 
@@ -1198,7 +1207,11 @@ function openCalendarEvent(dateTimeStr) {
     '&dates=' + fmt(dt) + '/' + fmt(dtEnd) +
     '&details=' + encodeURIComponent('Hoje é dia de aplicar sua tirzepatida. Lembre de registrar no app!') +
     '&ctz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+
   window.open(gcalUrl, '_blank');
+  showToast('📅 Google Calendar abriu — salve o evento e volte aqui!');
+  // Timer: quando voltar da outra aba, mostra confirmação
+  setTimeout(checkCalendarReturn, 8000);
 }
 
 // ======= NEXT DOSE =======
