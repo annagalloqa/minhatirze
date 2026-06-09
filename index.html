@@ -1146,34 +1146,57 @@ function generateICS(dateTimeStr) {
   ].join('\r\n');
 }
 
-async function openCalendarEvent(dateTimeStr) {
+function openCalendarEvent(dateTimeStr) {
   const ics = generateICS(dateTimeStr);
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-  const file = new File([blob], 'proxima-dose.ics', { type: 'text/calendar' });
 
-  // iOS PWA: Web Share API com arquivo .ics
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: 'Proxima dose - Tirzepatida' });
-      return;
-    } catch(e) {
-      if (e.name === 'AbortError') return;
+  // Approach 1 (iOS + Android): data URI forces native calendar prompt
+  // Safari on iOS navigates to data:text/calendar and opens "Add to Calendar"
+  const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+
+  if (isIOS) {
+    // iOS: open in new tab — Safari shows native "Add Event" sheet
+    const w = window.open(dataUri, '_blank');
+    if (!w) {
+      // Popup blocked — try direct navigation (works in PWA)
+      const a = document.createElement('a');
+      a.href = dataUri;
+      a.target = '_blank';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
+    return;
   }
 
-  // Fallback Android/desktop: download direto
-  try {
+  // Android / desktop: try download first, then data URI as fallback
+  if (isAndroid) {
+    // Direct .ics download — Android picks up and offers Calendar import
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'proxima-dose.ics';
+    a.download = 'proxima-dose-tirze.ics';
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-  } catch(e) {
-    showToast('⚠️ Não foi possível abrir o Calendário');
+    showToast('📅 Abra o arquivo baixado para adicionar ao Calendário');
+    return;
   }
+
+  // Desktop fallback
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'proxima-dose-tirze.ics';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 // ======= NEXT DOSE =======
@@ -1466,25 +1489,41 @@ function updateSummary() {
   try {
     const apps = getApps();
     const weights = getWeights();
+    const goal = getGoal();
 
     const elTotal = document.getElementById('statTotal');
     const elDose = document.getElementById('statDose');
     const elLoss = document.getElementById('statLoss');
-    if (!elTotal || !elDose || !elLoss) return; // page not rendered yet
+    if (!elTotal || !elDose || !elLoss) return;
 
     elTotal.textContent = apps.length;
     elDose.textContent = apps.length > 0 ? apps[0].dose.toFixed(1) : '—';
 
+    // Calcular kgs perdidos — usa peso registrado OU meta manual
+    let lostKg = null;
     if (weights.length >= 2) {
-      const lost = weights[0].kg - weights[weights.length-1].kg;
-      elLoss.textContent = lost > 0 ? '-'+lost.toFixed(1) : (lost < 0 ? '+'+Math.abs(lost).toFixed(1) : '0');
+      // Compara primeiro registro com último
+      lostKg = weights[0].kg - weights[weights.length-1].kg;
     } else if (weights.length === 1) {
-      const goal = getGoal();
       if (goal && goal.start) {
-        const lost = goal.start - weights[0].kg;
-        elLoss.textContent = lost > 0 ? '-'+lost.toFixed(1) : (lost < 0 ? '+'+Math.abs(lost).toFixed(1) : '0');
-      } else { elLoss.textContent = '—'; }
-    } else { elLoss.textContent = '—'; }
+        lostKg = goal.start - weights[0].kg;
+      }
+    } else {
+      // Sem registros de peso — usa a meta se preenchida
+      if (goal && goal.start && goal.current) {
+        lostKg = goal.start - goal.current;
+      }
+    }
+
+    if (lostKg !== null) {
+      const absVal = Math.abs(lostKg);
+      elLoss.textContent = lostKg > 0 ? '-' + absVal.toFixed(1) 
+        : (lostKg < 0 ? '+' + absVal.toFixed(1) : '0');
+      elLoss.style.color = lostKg > 0 ? 'var(--sage)' : (lostKg < 0 ? '#c47' : 'var(--text)');
+    } else {
+      elLoss.textContent = '—';
+      elLoss.style.color = 'var(--rose)';
+    }
 
     // Dose progress
     const doseEl = document.getElementById('doseProgress');
