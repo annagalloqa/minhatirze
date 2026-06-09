@@ -655,7 +655,7 @@
       <span class="notif-icon">🗓</span>
       <div class="notif-text"><strong>Lembrete via Calendário</strong><span>Automático ao agendar cada dose</span></div>
     </div>
-    <p id="calendarTipResume" style="font-size:12px;color:var(--text-soft);line-height:1.6;margin-top:12px;">Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. No painel que abre, escolha <strong>Calendário</strong> → toque em <strong>Adicionar ao Calendário</strong> → confirme com o <strong>ícone ✓</strong> no canto superior direito. O evento fica salvo mesmo com o app fechado. 🎉</p>
+    <p id="calendarTipResume" style="font-size:12px;color:var(--text-soft);line-height:1.6;margin-top:12px;">Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. O Google Calendar abre com data e lembrete preenchidos — é só tocar em <strong>Salvar</strong>. O evento sincroniza automaticamente com o Calendário do seu iPhone. ✨</p>
   </div>
 
   <div class="card" id="installCard" style="display:none">
@@ -733,13 +733,12 @@ function installApp() {
 }
 
 function updateCalendarTips() {
-  if (!isAndroid) return;
-  const androidShort = '💡 Escolha o app de <strong>Calendário</strong> no painel — o evento será importado automaticamente.';
-  const androidFull = 'Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. No painel que abre, escolha seu app de <strong>Calendário</strong> — no Android o evento é importado automaticamente. O lembrete fica salvo mesmo com o app fechado. 🎉';
+  // Unificado — Google Calendar funciona em todos os dispositivos
+  const tip = '💡 Toque em <strong>"Adicionar ao Calendário"</strong> — o Google Calendar abre com o evento preenchido. Toque em <strong>Salvar</strong> e pronto! O lembrete fica salvo na sua conta Google, acessível em qualquer dispositivo. 🎉';
   const t1 = document.getElementById('calendarTip');
   const t2 = document.getElementById('calendarTipResume');
-  if (t1) t1.innerHTML = androidShort;
-  if (t2) t2.innerHTML = androidFull;
+  if (t1) t1.innerHTML = tip;
+  if (t2) t2.innerHTML = 'Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. O Google Calendar abre com data e lembrete preenchidos — é só tocar em <strong>Salvar</strong>. O evento sincroniza automaticamente com o Calendário do seu iPhone. ✨';
 }
 
 // ======= LOGIN =======
@@ -1147,51 +1146,21 @@ function generateICS(dateTimeStr) {
 }
 
 function openCalendarEvent(dateTimeStr) {
-  const ics = generateICS(dateTimeStr);
+  const dt = new Date(dateTimeStr);
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
+    'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  const dtEnd = new Date(dt.getTime() + 30 * 60000);
 
-  if (isIOS) {
-    // iOS: iframe invisível carrega o .ics — Safari detecta e
-    // mostra opção nativa "Abrir no Calendário" sem sair do app
-    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const iframe = document.createElement('iframe');
-    iframe.src = url;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-      URL.revokeObjectURL(url);
-    }, 15000);
-    showToast('📅 Abrindo Calendário...');
-    return;
-  }
+  // Google Calendar — funciona no iPhone, Android e desktop
+  // Abre no navegador e oferece adicionar ao calendário nativo
+  const gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent('💉 Tirzepatida - dia de aplicar') +
+    '&dates=' + fmt(dt) + '/' + fmt(dtEnd) +
+    '&details=' + encodeURIComponent('Hoje é dia de aplicar sua tirzepatida. Lembre de registrar no app!') +
+    '&ctz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-  if (isAndroid) {
-    // Android: Google Calendar link
-    const dt = new Date(dateTimeStr);
-    const pad = n => String(n).padStart(2, '0');
-    const fmt = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
-      'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
-    const dtEnd = new Date(dt.getTime() + 30 * 60000);
-    const gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-      '&text=' + encodeURIComponent('💉 Tirzepatida - dia de aplicar') +
-      '&dates=' + fmt(dt) + '/' + fmt(dtEnd) +
-      '&details=' + encodeURIComponent('Hoje é dia de aplicar sua tirzepatida. Lembre de registrar no app!');
-    window.open(gcalUrl, '_blank');
-    return;
-  }
-
-  // Desktop: download .ics
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'proxima-dose-tirze.ics';
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  window.open(gcalUrl, '_blank');
 }
 
 // ======= NEXT DOSE =======
