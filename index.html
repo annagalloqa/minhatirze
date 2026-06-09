@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Minha Tirze</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Minha Tirze">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#C4717A">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rose: #C4717A;
+    --rose-light: #E8B4B8;
+    --rose-pale: #F9ECED;
+    --sage: #7A9E8E;
+    --sage-light: #B8D4C8;
+    --cream: #FDF8F4;
+    --warm-white: #FFFAF8;
+    --text: #2D1B1E;
+    --text-soft: #7A6568;
+    --gold: #C9A96E;
+    --border: rgba(196,113,122,0.15);
+    --shadow-sm: 0 2px 8px rgba(196,113,122,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-x: hidden; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); overflow-x: hidden; }
+
+  /* HEADER */
+  .header { background: var(--warm-white); border-bottom: 1px solid var(--border); padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 14px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm); }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .app-title { font-family: 'DM Serif Display', serif; font-size: 21px; color: var(--rose); }
+  .app-title span { font-style: italic; color: var(--gold); }
+  .next-dose-badge { background: var(--rose-pale); border: 1px solid var(--rose-light); border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 500; color: var(--rose); cursor: pointer; }
+  .next-dose-badge.active { background: var(--rose); color: white; }
+  .header-dose-row { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; }
+  .dose-label { font-size: 11px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px; }
+  .dose-value { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--text); line-height: 1; }
+  .dose-unit { font-size: 13px; color: var(--text-soft); }
+
+  /* PAGES */
+  .page { display: none; padding: 16px calc(16px + env(safe-area-inset-right, 0px)) 20px calc(16px + env(safe-area-inset-left, 0px)); animation: fadeIn 0.25s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* CARDS */
+  .card { background: var(--warm-white); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow-sm); overflow-wrap: break-word; word-break: break-word; min-width: 0; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px; }
+
+  /* DOSE PICKER */
+  .dose-picker-wrap { display: flex; align-items: center; justify-content: center; margin: 4px 0; gap: 4px; }
+  .picker-btn { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--rose-light); background: var(--rose-pale); color: var(--rose); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; user-select: none; touch-action: manipulation; }
+  .picker-btn:active { background: var(--rose); color: white; transform: scale(0.93); }
+  .picker-display { width: 96px; text-align: center; font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--text); line-height: 1; }
+  .picker-display small { display: block; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text-soft); font-weight: 400; margin-top: 1px; }
+
+  /* FORM */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--rose-light); background: white; }
+  .field textarea { resize: none; height: 72px; }
+
+  /* CHIPS */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 7px 13px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--cream); font-size: 13px; font-weight: 500; color: var(--text-soft); cursor: pointer; transition: all 0.15s; user-select: none; }
+  .chip.selected { background: var(--rose); border-color: var(--rose); color: white; }
+  .dose-chip { padding: 5px 10px; font-size: 12px; white-space: nowrap; flex-shrink: 0; border-radius: 16px; }
+  #doseChipsWrap::-webkit-scrollbar { display: none; }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; padding: 14px; background: var(--rose); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; margin-top: 6px; }
+  .btn-primary:active { background: #a85a63; transform: scale(0.98); }
+  .btn-secondary { width: 100%; padding: 12px; background: transparent; color: var(--rose); border: 1.5px solid var(--rose-light); border-radius: 12px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+
+  /* ===== BODY MAP ===== */
+  .body-map-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .body-map-container { position: relative; width: 200px; height: 340px; }
+  .body-map-container svg { width: 100%; height: 100%; }
+
+  /* Injection zones — clickable areas on the SVG */
+  .zone { cursor: pointer; transition: all 0.2s; }
+  .zone:hover .zone-fill { opacity: 0.5; }
+  .zone.active .zone-fill { opacity: 1 !important; }
+  .zone-fill { opacity: 0; transition: opacity 0.2s; }
+
+  .body-map-label {
+    margin-top: 0;
+    background: var(--rose-pale);
+    border: 1px solid var(--rose-light);
+    border-radius: 20px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rose);
+    text-align: center;
+    min-width: 180px;
+  }
+  .body-map-label.empty { color: var(--text-soft); background: var(--cream); border-color: var(--border); }
+
+  /* HISTORY LIST */
+  .history-item { display: flex; align-items: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .history-item:last-child { border-bottom: none; }
+  .history-dot { width: 40px; height: 40px; border-radius: 50%; background: var(--rose-pale); border: 2px solid var(--rose-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'DM Serif Display', serif; font-size: 12px; color: var(--rose); flex-direction: column; line-height: 1.1; }
+  .history-dot small { font-family: 'DM Sans', sans-serif; font-size: 9px; color: var(--text-soft); font-weight: 500; }
+  .history-info { flex: 1; }
+  .history-dose { font-weight: 600; font-size: 15px; color: var(--text); }
+  .history-date { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .history-symptoms { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .symptom-tag { font-size: 11px; padding: 2px 8px; background: var(--rose-pale); color: var(--rose); border-radius: 10px; font-weight: 500; }
+  .delete-btn { background: none; border: none; color: var(--rose-light); font-size: 18px; cursor: pointer; padding: 4px; line-height: 1; }
+
+  /* WEIGHT GOAL */
+  .goal-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .goal-box { flex: 1; border-radius: 12px; padding: 12px; text-align: center; border: 1px solid var(--border); }
+  .goal-box.start { background: #f0f0f0; }
+  .goal-box.current { background: var(--rose-pale); border-color: var(--rose-light); }
+  .goal-box.target { background: #e8f4ef; border-color: #a8d4bc; }
+  .goal-box-num { font-family: 'DM Serif Display', serif; font-size: 22px; line-height: 1; color: var(--text); }
+  .goal-box-label { font-size: 10px; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+  .goal-bar-wrap { margin: 4px 0 12px; }
+  .goal-bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-soft); margin-bottom: 5px; }
+  .goal-bar { height: 10px; background: #e0e0e0; border-radius: 5px; overflow: visible; position: relative; }
+  .goal-bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--rose-light), var(--sage)); transition: width 0.6s ease; position: relative; }
+  .goal-bar-fill::after { content: ''; position: absolute; right: -1px; top: -3px; width: 16px; height: 16px; background: var(--sage); border-radius: 50%; border: 3px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .goal-remaining { text-align: center; font-size: 13px; color: var(--text-soft); margin-top: 8px; }
+  .goal-remaining strong { color: var(--sage); }
+
+  /* STATS */
+  .stats-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .stat-box { flex: 1; min-width: 0; background: var(--warm-white); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; box-shadow: var(--shadow-sm); overflow: hidden; }
+  .stat-num { font-family: 'DM Serif Display', serif; font-size: clamp(18px, 5vw, 24px); color: var(--rose); line-height: 1; word-break: break-all; }
+  .stat-label { font-size: 10px; color: var(--text-soft); margin-top: 4px; font-weight: 500; }
+
+  /* PROGRESS */
+  .progress-section { margin-bottom: 6px; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-soft); margin-bottom: 5px; }
+  .progress-bar { height: 8px; background: var(--rose-pale); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--rose-light), var(--rose)); border-radius: 4px; transition: width 0.5s ease; }
+
+  /* NOTIF */
+  .notif-banner { background: linear-gradient(135deg, var(--sage-light), var(--sage)); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .notif-banner.off { background: linear-gradient(135deg, #e8e8e8, #ccc); }
+  .notif-icon { font-size: 22px; }
+  .notif-text strong { font-size: 14px; color: white; display: block; }
+  .notif-text span { font-size: 12px; color: rgba(255,255,255,0.8); }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--warm-white); border-top: 1px solid var(--border); display: flex; padding: 10px env(safe-area-inset-right, 0px) calc(env(safe-area-inset-bottom, 0px) + 10px) env(safe-area-inset-left, 0px); box-shadow: 0 -4px 20px rgba(196,113,122,0.1); z-index: 100; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; cursor: pointer; color: var(--text-soft); font-size: 11px; font-weight: 500; min-width: 0; }
+  .nav-item.active { color: var(--rose); }
+  .nav-icon { font-size: 21px; line-height: 1; }
+
+  /* TOAST */
+  .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--text); color: white; padding: 11px 18px; border-radius: 20px; font-size: 13px; line-height: 1.4; text-align: center; opacity: 0; transition: all 0.3s; z-index: 999; pointer-events: none; max-width: calc(100vw - 32px); width: max-content; word-break: break-word; white-space: normal; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 36px 20px; color: var(--text-soft); }
+  .empty-icon { font-size: 44px; margin-bottom: 10px; }
+  .empty p { font-size: 14px; line-height: 1.5; }
+
+  /* GOAL SETUP */
+  .goal-setup-row { display: flex; gap: 8px; }
+  .goal-setup-row .field { flex: 1; margin-bottom: 0; }
+
+  input[type="datetime-local"], input[type="date"] { color-scheme: light; }
+
+  /* ===== LOGIN SCREEN ===== */
+  /* INSTALL SCREEN */
+  #installScreen {
+    position: fixed; inset: 0; background: var(--cream);
+    display: flex; flex-direction: column; align-items: center;
+    z-index: 10000; overflow-y: auto;
+    padding: calc(env(safe-area-inset-top,0px) + 48px) 24px calc(env(safe-area-inset-bottom,0px) + 48px);
+    animation: fadeIn 0.4s ease;
+  }
+  #installScreen.hidden { display: none; }
+  .install-hero { text-align: center; margin-bottom: 36px; }
+  .install-emoji { font-size: 64px; margin-bottom: 16px; }
+  .install-title { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--rose); line-height: 1.1; margin-bottom: 8px; }
+  .install-title span { color: var(--gold); }
+  .install-sub { font-size: 15px; color: var(--text-soft); line-height: 1.6; max-width: 300px; }
+  .install-card { background: var(--warm-white); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 4px 24px rgba(196,113,122,0.10); margin-bottom: 16px; }
+  .install-card-title { font-size: 13px; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .install-step { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+  .install-step:last-child { margin-bottom: 0; }
+  .install-step-num { width: 28px; height: 28px; min-width: 28px; border-radius: 50%; background: var(--rose); color: white; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .install-step-text { font-size: 14px; color: var(--text); line-height: 1.5; padding-top: 4px; }
+  .install-step-text strong { color: var(--rose); }
+  .install-note { font-size: 12px; color: var(--text-soft); text-align: center; margin-top: 8px; line-height: 1.6; max-width: 320px; }
+  .install-tab-row { display: flex; gap: 8px; width: 100%; max-width: 360px; margin-bottom: 16px; }
+  .install-tab { flex: 1; padding: 10px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--cream); font-size: 13px; font-weight: 600; color: var(--text-soft); cursor: pointer; text-align: center; }
+  .install-tab.active { background: var(--rose); color: white; border-color: var(--rose); }
+
+  #loginScreen {
+    position: fixed; inset: 0; background: var(--cream);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; padding: 32px 28px; animation: fadeIn 0.4s ease;
+  }
+  #loginScreen.hidden { display: none; }
+  .login-logo {
+    font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--rose);
+    margin-bottom: 6px; text-align: center;
+  }
+  .login-logo span { font-style: italic; color: var(--gold); }
+  .login-sub { font-size: 13px; color: var(--text-soft); margin-bottom: 36px; text-align: center; }
+  .login-emoji { font-size: 64px; margin-bottom: 20px; }
+  .login-field { width: 100%; margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 7px; }
+  .login-field input {
+    width: 100%; padding: 15px 16px; border: 1.5px solid var(--border); border-radius: 12px;
+    font-size: 16px; font-family: 'DM Sans', sans-serif; background: var(--warm-white);
+    color: var(--text); outline: none; transition: border-color 0.2s; -webkit-appearance: none;
+    letter-spacing: 3px; text-align: center;
+  }
+  .login-field input:focus { border-color: var(--rose-light); background: white; }
+  .login-error { color: var(--rose); font-size: 13px; text-align: center; margin-bottom: 10px; min-height: 18px; }
+  .login-hint { font-size: 12px; color: var(--text-soft); text-align: center; margin-top: 16px; line-height: 1.5; }
+  .login-hint a { color: var(--rose); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- INSTALL SCREEN -->
+<div id="installScreen" class="hidden">
+  <div class="install-hero">
+    <div class="install-emoji">💉</div>
+    <div class="install-title">minha <span>tirze</span></div>
+    <p class="install-sub">Seu diário particular de tratamento com tirzepatida</p>
+  </div>
+
+  <!-- Tabs — shown only on desktop/unknown -->
+  <div class="install-tab-row" id="installTabRow" style="display:none">
+    <button class="install-tab active" onclick="showInstallTab('ios',this)">📱 iPhone</button>
+    <button class="install-tab" onclick="showInstallTab('android',this)">🤖 Android</button>
+  </div>
+
+  <!-- iOS steps -->
+  <div class="install-card" id="installIOS">
+    <div class="install-card-title">📱 Instalar no iPhone (Safari)</div>
+    <div class="install-step">
+      <div class="install-step-num">1</div>
+      <div class="install-step-text">Toque em <strong>···</strong> no final da barra inferior do Safari</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">2</div>
+      <div class="install-step-text">Toque no ícone <strong>Compartilhar</strong> (□↑)</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">3</div>
+      <div class="install-step-text">Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong></div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">4</div>
+      <div class="install-step-text">Confirme o nome e toque em <strong>"Adicionar"</strong> no canto superior direito</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">5</div>
+      <div class="install-step-text">Abra o app pelo ícone na <strong>tela de início</strong> 🎉</div>
+    </div>
+  </div>
+
+  <!-- Android steps -->
+  <div class="install-card" id="installAndroid" style="display:none">
+    <div class="install-card-title">🤖 Instalar no Android (Chrome)</div>
+    <div class="install-step">
+      <div class="install-step-num">1</div>
+      <div class="install-step-text">Toque no menu <strong>⋮</strong> no canto superior direito do Chrome</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">2</div>
+      <div class="install-step-text">Toque em <strong>"Adicionar à tela inicial"</strong> ou <strong>"Instalar app"</strong></div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">3</div>
+      <div class="install-step-text">Confirme tocando em <strong>"Adicionar"</strong></div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-num">4</div>
+      <div class="install-step-text">Abra o app pelo ícone na <strong>tela de início</strong> 🎉</div>
+    </div>
+  </div>
+
+  <p class="install-note">⚠️ Importante: faça o login <strong>somente depois</strong> de instalar o app — seus dados ficam salvos no app instalado.</p>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-emoji">💉</div>
+  <div class="login-logo">minha <span>tirzepatida</span></div>
+  <div class="login-sub">Seu diário particular de tratamento</div>
+  <div style="width:100%;max-width:320px">
+    <!-- SETUP: step 1 — name -->
+    <div class="login-field" id="loginNameField" style="display:none">
+      <label>Seu nome</label>
+      <input type="text" id="inputName" placeholder="Ex: Ana Carolina" autocomplete="given-name"
+        style="text-align:center;letter-spacing:0" oninput="document.getElementById('loginError').textContent=''">
+    </div>
+    <!-- SETUP: step 2 — create PIN -->
+    <div class="login-field" id="loginPinSetup" style="display:none">
+      <label>Criar senha (4 dígitos)</label>
+      <input type="password" inputmode="numeric" maxlength="4" id="pinSetup" placeholder="••••" oninput="onPinSetupInput(this)">
+    </div>
+    <!-- SETUP: step 3 — confirm PIN -->
+    <div class="login-field" id="loginPinConfirm" style="display:none">
+      <label>Confirmar senha</label>
+      <input type="password" inputmode="numeric" maxlength="4" id="pinConfirm" placeholder="••••" oninput="onPinConfirmInput(this)">
+    </div>
+    <!-- RETURNING: enter PIN -->
+    <div id="loginPinEnter" style="display:none">
+      <div id="loginWelcomeName" style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);text-align:center;margin-bottom:18px"></div>
+      <div class="login-field">
+        <label>Digite sua senha</label>
+        <input type="password" inputmode="numeric" maxlength="4" id="pinEnter" placeholder="••••" oninput="onPinEnterInput(this)" autofocus>
+      </div>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Entrar</button>
+    <div class="login-hint" id="loginHint"></div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="app-title">minha <span>tirzepatida</span></div>
+      <div class="header-dose-row">
+        <span class="dose-label">dose atual</span>
+        <span class="dose-value" id="headerDose">—</span>
+        <span class="dose-unit">mg</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+      <div class="next-dose-badge" id="nextDoseBadge" onclick="showNextDoseInfo()">📅 próxima dose</div>
+      <div id="nextDoseInfo" style="display:none;font-size:11px;color:var(--text-soft);text-align:right;line-height:1.4;">
+        <strong id="nextDoseInfoText" style="color:var(--text)"></strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="showPage('registrar',this)"><span class="nav-icon">💉</span>Registrar</div>
+  <div class="nav-item" onclick="showPage('sintomas',this)"><span class="nav-icon">🌡</span>Sintomas</div>
+  <div class="nav-item" onclick="showPage('historico',this)"><span class="nav-icon">📋</span>Histórico</div>
+  <div class="nav-item" onclick="showPage('peso',this)"><span class="nav-icon">⚖️</span>Peso</div>
+  <div class="nav-item" onclick="showPage('resumo',this)"><span class="nav-icon">📊</span>Resumo</div>
+</div>
+
+<!-- PAGE: REGISTRAR -->
+<div class="page active" id="page-registrar">
+
+  <div class="card">
+    <div class="card-title">💉 Nova Aplicação</div>
+
+    <div class="field">
+      <label>Data e Hora</label>
+      <input type="datetime-local" id="appDateTime">
+    </div>
+
+    <div class="field">
+      <label>Dose (mg)</label>
+      <div class="dose-picker-wrap">
+        <button class="picker-btn" onclick="changeDose(-0.1)">−</button>
+        <div class="picker-display"><span id="doseDisplay">3.5</span><small>mg</small></div>
+        <button class="picker-btn" onclick="changeDose(0.1)">+</button>
+      </div>
+      <div id="doseChipsWrap" style="display:flex;gap:6px;margin-top:10px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none;"></div>
+      <p style="font-size:11px;color:var(--text-soft);text-align:center;margin:4px 0 0;">Toque na dose desejada ou deslize para ver todas · use + / − para ajuste fino</p>
+    </div>
+
+    <!-- DOSE CONVERTER -->
+    <div style="background:var(--rose-pale);border:1px solid var(--rose-light);border-radius:14px;padding:14px 16px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">💉 Conversor de Dose → UI</div>
+      <div style="font-size:12px;color:var(--text-soft);margin-bottom:10px;">Qual é a concentração do seu frasco? <span style="font-size:11px;">(sempre 0,5ml)</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button onclick="setVial(5)"  id="vial-5"  style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid var(--border);background:var(--cream);font-size:13px;font-weight:600;color:var(--text-soft);cursor:pointer;">5mg</button>
+        <button onclick="setVial(10)" id="vial-10" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid var(--border);background:var(--cream);font-size:13px;font-weight:600;color:var(--text-soft);cursor:pointer;">10mg</button>
+        <button onclick="setVial(15)" id="vial-15" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid var(--border);background:var(--cream);font-size:13px;font-weight:600;color:var(--text-soft);cursor:pointer;">15mg</button>
+      </div>
+      <div id="uiResult" style="display:none;text-align:center;background:white;border-radius:10px;padding:12px;border:1px solid var(--rose-light);">
+        <div style="font-size:11px;color:var(--text-soft);margin-bottom:4px;">Para <span id="uiDose">—</span> mg com frasco de <span id="uiVial">—</span> mg</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:36px;color:var(--rose);line-height:1;"><span id="uiValue">—</span> <span style="font-size:18px;">UI</span></div>
+        <div style="font-size:11px;color:var(--text-soft);margin-top:4px;">(<span id="uiMl">—</span> ml na seringa)</div>
+      </div>
+    </div>
+
+    <!-- BODY MAP -->
+    <div class="field" style="margin-bottom:10px">
+      <label>Onde você aplicou? <span style="font-weight:400;text-transform:none;letter-spacing:0">— toque no boneco</span></label>
+      <div class="body-map-wrap">
+        <div class="body-map-container">
+          <!-- SVG BODY with clickable zones -->
+          <svg viewBox="0 0 200 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- HEAD -->
+            <ellipse cx="100" cy="32" rx="22" ry="26" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- NECK -->
+            <rect x="91" y="54" width="18" height="14" rx="4" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- TORSO -->
+            <rect x="62" y="66" width="76" height="90" rx="12" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- LEFT ARM -->
+            <rect x="138" y="68" width="22" height="72" rx="11" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- RIGHT ARM -->
+            <rect x="40" y="68" width="22" height="72" rx="11" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- LEGS -->
+            <rect x="64" y="155" width="34" height="100" rx="12" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <rect x="102" y="155" width="34" height="100" rx="12" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+
+            <!-- ===== CLICKABLE ZONES ===== -->
+
+            <!-- ABDOMEN LEFT (screen left = patient's right) -->
+            <g class="zone" id="zone-abd-l" onclick="selectZone('abd-l','Abdômen esquerdo')">
+              <rect class="zone-fill" x="65" y="100" width="32" height="50" rx="6" fill="#C4717A"/>
+              <text x="81" y="118" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ABD</text>
+              <text x="81" y="128" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ESQ</text>
+              <!-- dashed border always visible -->
+              <rect x="65" y="100" width="32" height="50" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+
+            <!-- ABDOMEN RIGHT (screen right = patient's left) -->
+            <g class="zone" id="zone-abd-r" onclick="selectZone('abd-r','Abdômen direito')">
+              <rect class="zone-fill" x="103" y="100" width="32" height="50" rx="6" fill="#C4717A"/>
+              <text x="119" y="118" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ABD</text>
+              <text x="119" y="128" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="103" y="100" width="32" height="50" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+
+            <!-- THIGH LEFT (screen left) -->
+            <g class="zone" id="zone-coxa-l" onclick="selectZone('coxa-l','Coxa esquerda')">
+              <rect class="zone-fill" x="65" y="165" width="30" height="55" rx="8" fill="#C4717A"/>
+              <text x="80" y="188" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">COXA</text>
+              <text x="80" y="198" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ESQ</text>
+              <rect x="65" y="165" width="30" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+
+            <!-- THIGH RIGHT (screen right) -->
+            <g class="zone" id="zone-coxa-r" onclick="selectZone('coxa-r','Coxa direita')">
+              <rect class="zone-fill" x="105" y="165" width="30" height="55" rx="8" fill="#C4717A"/>
+              <text x="120" y="188" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">COXA</text>
+              <text x="120" y="198" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="105" y="165" width="30" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+
+            <!-- ARM LEFT (screen left = patient's right) -->
+            <g class="zone" id="zone-braco-l" onclick="selectZone('braco-l','Braço esquerdo')">
+              <rect class="zone-fill" x="40" y="75" width="22" height="55" rx="8" fill="#C4717A"/>
+              <text x="51" y="96" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">BRÇ</text>
+              <text x="51" y="106" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ESQ</text>
+              <rect x="40" y="75" width="22" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+
+            <!-- ARM RIGHT (screen right = patient's left) -->
+            <g class="zone" id="zone-braco-r" onclick="selectZone('braco-r','Braço direito')">
+              <rect class="zone-fill" x="138" y="75" width="22" height="55" rx="8" fill="#C4717A"/>
+              <text x="149" y="96" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">BRÇ</text>
+              <text x="149" y="106" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="138" y="75" width="22" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+
+          </svg>
+        </div>
+        <div style="display:flex;justify-content:space-between;width:200px;font-size:11px;color:var(--text-soft);padding:0 4px;margin-top:2px;">
+          <span>← Esq</span><span>Dir →</span>
+        </div>
+        <div class="body-map-label empty" id="bodyMapLabel">Toque em uma área do boneco</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Observações</label>
+      <textarea id="appNotes" placeholder="Algo diferente desta aplicação..."></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="saveApplication()">💾 Salvar Aplicação</button>
+  </div>
+
+  <!-- PRÓXIMA DOSE -->
+  <div class="card" id="nextDoseCard" style="display:none">
+    <div class="card-title">⏰ Agendar Próxima Dose</div>
+    <div class="field">
+      <label>Data da Próxima Dose</label>
+      <input type="datetime-local" id="nextDoseDate">
+    </div>
+    <button class="btn-primary" onclick="scheduleNextDose()">📅 Adicionar ao Calendário</button>
+  <div style="margin-top:10px;padding:10px 12px;background:var(--rose-pale);border-radius:10px;border:1px solid var(--rose-light)">
+    <p id="calendarTip" style="font-size:12px;color:var(--rose);line-height:1.5;">💡 No painel que abre: toque em <strong>Calendário</strong> → toque em <strong>Adicionar ao Calendário</strong> → confirme com o <strong>ícone ✓</strong> no canto superior direito.</p>
+  </div>
+  </div>
+</div>
+
+<!-- PAGE: SINTOMAS -->
+<div class="page" id="page-sintomas">
+  <div class="card">
+    <div class="card-title">🌡 Diário de Sintomas — Como estou hoje?</div>
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="symptomDate">
+    </div>
+    <div class="field">
+      <label>Como você está se sentindo?</label>
+      <div class="chips" id="symptomsChips">
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">🤢 Náusea</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">🤮 Vômito</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">😴 Cansaço</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">🧠 Dor de cabeça</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">💩 Diarreia</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">🫃 Dor abdominal</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">😶 Sem apetite</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">😵‍💫 Tontura</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">💪 Me senti bem</div>
+        <div class="chip" onclick="toggleChip(this,'symptomsChips')">✅ Sem sintomas</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Anotações do dia</label>
+      <textarea id="symptomNotes" placeholder="Como foi seu dia? Energia, apetite, disposição..."></textarea>
+    </div>
+    <button class="btn-primary" onclick="saveSymptoms()">💾 Salvar Diário de Hoje</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 Histórico de Sintomas</div>
+    <div id="symptomHistoryList">
+      <div class="empty"><div class="empty-icon">🌡</div><p>Nenhum registro ainda.<br>Comece registrando como está hoje!</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: HISTÓRICO -->
+<div class="page" id="page-historico">
+  <div class="card">
+    <div class="card-title">📋 Histórico de Aplicações</div>
+    <div id="historyList">
+      <div class="empty"><div class="empty-icon">💉</div><p>Nenhuma aplicação registrada ainda.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: PESO -->
+<div class="page" id="page-peso">
+
+  <!-- GOAL SETUP -->
+  <div class="card">
+    <div class="card-title">🎯 Minha Meta de Peso</div>
+    <div class="field">
+      <label>Peso no início do tratamento (kg)</label>
+      <input type="number" id="goalStart" step="0.1" placeholder="ex: 85.0" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Peso atual (kg)</label>
+      <input type="number" id="goalCurrent" step="0.1" placeholder="ex: 78.0" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Peso que quero chegar (kg)</label>
+      <input type="number" id="goalTarget" step="0.1" placeholder="ex: 65.0" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Data que comecei o tratamento</label>
+      <input type="date" id="goalStartDate">
+    </div>
+    <button class="btn-primary" onclick="saveGoal()">💾 Salvar Meta</button>
+    <p style="font-size:11px;color:var(--text-soft);margin-top:10px;line-height:1.5;">💡 Atualize o peso atual aqui sempre que quiser, ou registre semana a semana no diário abaixo.</p>
+  </div>
+
+  <!-- GOAL PROGRESS -->
+  <div class="card" id="goalProgressCard" style="display:none">
+    <div class="card-title">📊 Progresso da Meta</div>
+    <div class="goal-row">
+      <div class="goal-box start">
+        <div class="goal-box-num" id="gpStart">—</div>
+        <div class="goal-box-label">início</div>
+      </div>
+      <div class="goal-box current">
+        <div class="goal-box-num" id="gpCurrent">—</div>
+        <div class="goal-box-label">atual</div>
+      </div>
+      <div class="goal-box target">
+        <div class="goal-box-num" id="gpTarget">—</div>
+        <div class="goal-box-label">meta</div>
+      </div>
+    </div>
+    <div class="goal-bar-wrap">
+      <div class="goal-bar-labels">
+        <span id="gpStartLabel">—</span>
+        <span id="gpTargetLabel">—</span>
+      </div>
+      <div class="goal-bar">
+        <div class="goal-bar-fill" id="goalBarFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="goal-remaining" id="goalRemaining"></div>
+  </div>
+
+  <!-- REGISTER WEIGHT -->
+  <div class="card">
+    <div class="card-title">⚖️ Registrar Peso de Hoje</div>
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="weightDate">
+    </div>
+    <div class="dose-picker-wrap">
+      <button class="picker-btn" onclick="changeWeight(-0.1)">−</button>
+      <div class="picker-display">
+        <input id="weightDisplay" type="number" step="0.1" value="70.0" inputmode="decimal"
+          style="width:100px;text-align:center;font-family:'DM Serif Display',serif;font-size:34px;color:var(--text);border:none;background:transparent;outline:none;-webkit-appearance:none;"
+          onchange="currentWeight=Math.round(parseFloat(this.value||70)*10)/10;this.value=currentWeight.toFixed(1)">
+        <small>kg</small>
+      </div>
+      <button class="picker-btn" onclick="changeWeight(0.1)">+</button>
+    </div>
+    <button class="btn-primary" onclick="saveWeight()">💾 Salvar Peso</button>
+  </div>
+
+  <!-- CHART -->
+  <div class="card">
+    <div class="card-title">📈 Evolução do Peso</div>
+    <canvas id="weightChart" height="140"></canvas>
+    <div id="weightHistory" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- PAGE: RESUMO -->
+<div class="page" id="page-resumo">
+  <div class="stats-row" id="statsRow">
+    <div class="stat-box"><div class="stat-num" id="statTotal">0</div><div class="stat-label">aplicações</div></div>
+    <div class="stat-box"><div class="stat-num" id="statDose">—</div><div class="stat-label">dose (mg)</div></div>
+    <div class="stat-box"><div class="stat-num" id="statLoss">—</div><div class="stat-label">kg perdidos</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Progressão de Dose</div>
+    <div id="doseProgress"></div>
+  </div>
+
+  <!-- ROTATION MAP -->
+  <div class="card">
+    <div class="card-title">🗺 Rodízio de Aplicações</div>
+    <div id="rotationSummary"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 Lembretes</div>
+    <div class="notif-banner" style="cursor:default">
+      <span class="notif-icon">🗓</span>
+      <div class="notif-text"><strong>Lembrete via Calendário</strong><span>Automático ao agendar cada dose</span></div>
+    </div>
+    <p id="calendarTipResume" style="font-size:12px;color:var(--text-soft);line-height:1.6;margin-top:12px;">Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. No painel que abre, escolha <strong>Calendário</strong> → toque em <strong>Adicionar ao Calendário</strong> → confirme com o <strong>ícone ✓</strong> no canto superior direito. O evento fica salvo mesmo com o app fechado. 🎉</p>
+  </div>
+
+  <div class="card" id="installCard" style="display:none">
+    <div class="card-title">📲 Instalar o App</div>
+    <p style="font-size:13px;color:var(--text-soft);line-height:1.6;margin-bottom:12px;">Instale o app na tela inicial do seu celular para acesso rápido, mesmo sem internet.</p>
+    <button class="btn-primary" onclick="installApp()">📲 Instalar agora</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🧹 Dados</div>
+    <button class="btn-secondary" onclick="exportData()">📤 Exportar dados</button>
+    <p style="font-size:12px;color:var(--text-soft);line-height:1.5;margin:8px 0 0;">Gera um resumo completo do seu tratamento — útil para compartilhar com seu médico ou guardar como backup.</p>
+    <button class="btn-secondary" style="margin-top:12px;color:#c47;border-color:#c47;" onclick="clearData()">🗑 Limpar todos os dados</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ======= PLATFORM & INSTALL =======
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone === true ||
+                     window.matchMedia('(display-mode: standalone)').matches;
+
+function checkInstallScreen() {
+  if (isStandalone) return;
+  const screen = document.getElementById('installScreen');
+  screen.classList.remove('hidden');
+  if (isIOS) {
+    document.getElementById('installIOS').style.display = 'block';
+    document.getElementById('installAndroid').style.display = 'none';
+    document.getElementById('installTabRow').style.display = 'none';
+  } else if (isAndroid) {
+    document.getElementById('installIOS').style.display = 'none';
+    document.getElementById('installAndroid').style.display = 'block';
+    document.getElementById('installTabRow').style.display = 'none';
+  } else {
+    document.getElementById('installIOS').style.display = 'block';
+    document.getElementById('installAndroid').style.display = 'none';
+    document.getElementById('installTabRow').style.display = 'flex';
+  }
+}
+
+function showInstallTab(platform, btn) {
+  document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('installIOS').style.display = platform === 'ios' ? 'block' : 'none';
+  document.getElementById('installAndroid').style.display = platform === 'android' ? 'block' : 'none';
+}
+
+checkInstallScreen();
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const card = document.getElementById('installCard');
+  if (card) card.style.display = 'block';
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const card = document.getElementById('installCard');
+  if (card) card.style.display = 'none';
+});
+
+function installApp() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(() => {
+    deferredInstallPrompt = null;
+    const card = document.getElementById('installCard');
+    if (card) card.style.display = 'none';
+  });
+}
+
+function updateCalendarTips() {
+  if (!isAndroid) return;
+  const androidShort = '💡 Escolha o app de <strong>Calendário</strong> no painel — o evento será importado automaticamente.';
+  const androidFull = 'Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. No painel que abre, escolha seu app de <strong>Calendário</strong> — no Android o evento é importado automaticamente. O lembrete fica salvo mesmo com o app fechado. 🎉';
+  const t1 = document.getElementById('calendarTip');
+  const t2 = document.getElementById('calendarTipResume');
+  if (t1) t1.innerHTML = androidShort;
+  if (t2) t2.innerHTML = androidFull;
+}
+
+// ======= LOGIN =======
+const STORED_PIN_KEY = 'tirzPin';
+const STORED_NAME_KEY = 'tirzName';
+
+function initLogin() {
+  const pin = localStorage.getItem(STORED_PIN_KEY);
+  if (!pin) {
+    // First time — step 1: name
+    document.getElementById('loginNameField').style.display = 'block';
+    document.getElementById('loginBtn').textContent = 'Próximo →';
+    document.getElementById('loginHint').textContent = 'Seus dados ficam salvos só no seu aparelho.';
+    setTimeout(() => document.getElementById('inputName').focus(), 300);
+  } else {
+    // Returning user
+    const name = localStorage.getItem(STORED_NAME_KEY) || '';
+    document.getElementById('loginPinEnter').style.display = 'block';
+    document.getElementById('loginBtn').textContent = 'Entrar';
+    document.getElementById('loginHint').innerHTML = '<a onclick="resetAll()" style="cursor:pointer;color:var(--rose)">Esqueci minha senha — redefinir só o PIN</a>';
+    if (name) {
+      document.getElementById('loginWelcomeName').textContent = 'Olá, ' + name + ' 👋';
+    }
+    setTimeout(() => document.getElementById('pinEnter').focus(), 300);
+  }
+}
+
+let pinSetupStep = 1; // 1=name, 2=create, 3=confirm
+let tempPin = '';
+
+function onPinSetupInput(el) {
+  if (el.value.length === 4) document.getElementById('loginBtn').focus();
+}
+function onPinConfirmInput(el) {
+  if (el.value.length === 4) handleLogin();
+}
+function onPinEnterInput(el) {
+  document.getElementById('loginError').textContent = '';
+  if (el.value.length === 4) handleLogin();
+}
+
+function handleLogin() {
+  const pin = localStorage.getItem(STORED_PIN_KEY);
+  document.getElementById('loginError').textContent = '';
+
+  if (!pin) {
+    if (pinSetupStep === 1) {
+      // Validate name
+      const name = document.getElementById('inputName').value.trim();
+      if (!name) { document.getElementById('loginError').textContent = 'Por favor informe seu nome'; return; }
+      localStorage.setItem(STORED_NAME_KEY, name);
+      pinSetupStep = 2;
+      document.getElementById('loginNameField').style.display = 'none';
+      document.getElementById('loginPinSetup').style.display = 'block';
+      document.getElementById('loginBtn').textContent = 'Próximo →';
+      document.getElementById('loginHint').textContent = 'Crie uma senha de 4 números para proteger seus dados.';
+      setTimeout(() => document.getElementById('pinSetup').focus(), 100);
+
+    } else if (pinSetupStep === 2) {
+      const v = document.getElementById('pinSetup').value;
+      if (v.length !== 4 || !/^\d+$/.test(v)) {
+        document.getElementById('loginError').textContent = 'Use exatamente 4 números'; return;
+      }
+      tempPin = v;
+      pinSetupStep = 3;
+      document.getElementById('loginPinSetup').style.display = 'none';
+      document.getElementById('loginPinConfirm').style.display = 'block';
+      document.getElementById('loginBtn').textContent = 'Confirmar senha';
+      document.getElementById('loginHint').textContent = 'Digite a senha novamente para confirmar.';
+      setTimeout(() => document.getElementById('pinConfirm').focus(), 100);
+
+    } else {
+      const v = document.getElementById('pinConfirm').value;
+      if (v !== tempPin) {
+        document.getElementById('loginError').textContent = 'Senhas não conferem. Tente novamente.';
+        document.getElementById('pinConfirm').value = '';
+        return;
+      }
+      localStorage.setItem(STORED_PIN_KEY, tempPin);
+      unlockApp();
+    }
+  } else {
+    const v = document.getElementById('pinEnter').value;
+    if (v === pin) {
+      unlockApp();
+    } else {
+      document.getElementById('loginError').textContent = 'Senha incorreta';
+      document.getElementById('pinEnter').value = '';
+      setTimeout(() => document.getElementById('pinEnter').focus(), 100);
+    }
+  }
+}
+
+function unlockApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  // Reset scroll to top after DOM settles
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  });
+  // Show name in header
+  const name = localStorage.getItem(STORED_NAME_KEY) || '';
+  if (name) {
+    const titleEl = document.querySelector('.app-title');
+    if (titleEl) titleEl.innerHTML = `minha <span>tirzepatida</span> <small style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-soft);font-style:normal;font-weight:500">· ${name}</small>`;
+  }
+  initApp();
+}
+
+function resetAll() {
+  if (!confirm('Isso vai resetar apenas sua senha e nome. Seus dados de saúde continuam salvos. Continuar?')) return;
+  localStorage.removeItem(STORED_PIN_KEY);
+  localStorage.removeItem(STORED_NAME_KEY);
+  location.reload();
+}
+
+// ======= DOSE CHIPS =======
+function buildDoseChips() {
+  const wrap = document.getElementById('doseChipsWrap');
+  if (!wrap) return;
+  // Todas as doses de 0.5mg em 0.5mg
+  const doses = [];
+  for (let d = 2.5; d <= 15; d = Math.round((d + 0.5) * 10) / 10) doses.push(d);
+  wrap.innerHTML = doses.map(d => {
+    const id = 'dchip-' + d.toFixed(1).replace('.','_');
+    return `<button onclick="setDose(${d})" class="chip dose-chip" id="${id}">${d}</button>`;
+  }).join('');
+  highlightDoseChip();
+}
+
+// ======= STATE =======
+let currentDose = 3.5;
+let currentWeight = 70.0;
+let selectedZone = '';
+let notifScheduled = null;
+
+function getApps() { return JSON.parse(localStorage.getItem('tirzApps') || '[]'); }
+function saveApps(a) { localStorage.setItem('tirzApps', JSON.stringify(a)); }
+function getWeights() { return JSON.parse(localStorage.getItem('tirzWeights') || '[]'); }
+function saveWeights(w) { localStorage.setItem('tirzWeights', JSON.stringify(w)); }
+function getGoal() { return JSON.parse(localStorage.getItem('tirzGoal') || 'null'); }
+function saveGoalData(g) { localStorage.setItem('tirzGoal', JSON.stringify(g)); }
+
+// ======= INIT =======
+window.onload = () => { initLogin(); };
+
+function initApp() {
+  const apps = getApps();
+  if (apps.length > 0) {
+    const lastDose = apps.sort((a, b) => b.datetime.localeCompare(a.datetime))[0].dose;
+    if (lastDose) {
+      currentDose = lastDose;
+    }
+  }
+  buildDoseChips();
+  document.getElementById('doseDisplay').textContent = currentDose.toFixed(1);
+  const todayStr = localDateStr();
+  document.getElementById('appDateTime').value = localDatetimeStr();
+  document.getElementById('weightDate').value = todayStr;
+  document.getElementById('weightDisplay').value = currentWeight.toFixed(1);
+  document.getElementById('goalStartDate').value = todayStr;
+  updateHeaderDose();
+  loadGoalForm();
+  updateGoalProgress();
+  updateSummary();
+  updateCalendarTips();
+  updateUIConverter();
+  setTimeout(() => { drawWeightChart(); updateHeaderDose(); updateSummary(); }, 100);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') updateNextDoseBadge();
+  });
+}
+
+
+// ======= PAGES =======
+function showPage(name, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  if (name === 'historico') renderHistory();
+  if (name === 'sintomas') { renderSymptomHistory(); const now=new Date(); document.getElementById('symptomDate').value=now.toISOString().slice(0,10); }
+  if (name === 'peso') { drawWeightChart(); renderWeightHistory(); updateGoalProgress(); loadGoalForm(); }
+  if (name === 'resumo') updateSummary();
+}
+
+// ======= DOSE PICKER =======
+function changeDose(d) {
+  currentDose = Math.round((currentDose + d) * 10) / 10;
+  if (currentDose < 0.5) currentDose = 0.5;
+  if (currentDose > 20) currentDose = 20;
+  document.getElementById('doseDisplay').textContent = currentDose.toFixed(1);
+  highlightDoseChip();
+  updateUIConverter();
+}
+function setDose(v) {
+  currentDose = v;
+  document.getElementById('doseDisplay').textContent = currentDose.toFixed(1);
+  highlightDoseChip();
+  updateUIConverter();
+}
+function highlightDoseChip() {
+  document.querySelectorAll('#doseChipsWrap .chip').forEach(c => c.classList.remove('selected'));
+  const id = 'dchip-' + currentDose.toFixed(1).replace('.','_');
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('selected'); el.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); }
+}
+
+// ======= DOSE → UI CONVERTER =======
+let currentVial = parseInt(localStorage.getItem('tirzVial') || '0');
+
+function setVial(mg) {
+  currentVial = mg;
+  localStorage.setItem('tirzVial', mg);
+  updateUIConverter();
+}
+
+function updateUIConverter() {
+  const btns = [5, 10, 15];
+  btns.forEach(v => {
+    const btn = document.getElementById('vial-' + v);
+    if (!btn) return;
+    const active = currentVial === v;
+    btn.style.background = active ? 'var(--rose)' : 'var(--cream)';
+    btn.style.color = active ? 'white' : 'var(--text-soft)';
+    btn.style.borderColor = active ? 'var(--rose)' : 'var(--border)';
+  });
+  const result = document.getElementById('uiResult');
+  if (!result) return;
+  if (!currentVial) { result.style.display = 'none'; return; }
+  const ui = Math.round((currentDose / currentVial) * 50);
+  const ml = ((currentDose / currentVial) * 0.5).toFixed(2);
+  document.getElementById('uiDose').textContent = currentDose.toFixed(1);
+  document.getElementById('uiVial').textContent = currentVial;
+  document.getElementById('uiValue').textContent = ui;
+  document.getElementById('uiMl').textContent = ml;
+  result.style.display = 'block';
+}
+
+// ======= WEIGHT PICKER =======
+function changeWeight(d) {
+  currentWeight = Math.round((currentWeight + d) * 10) / 10;
+  if (currentWeight < 30) currentWeight = 30;
+  if (currentWeight > 300) currentWeight = 300;
+  document.getElementById('weightDisplay').value = currentWeight.toFixed(1);
+}
+
+// ======= BODY MAP =======
+function selectZone(zoneId, label) {
+  // Clear all active
+  document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
+  // Set selected
+  const el = document.getElementById('zone-' + zoneId);
+  if (el) {
+    el.classList.add('active');
+    const fill = el.querySelector('.zone-fill');
+    if (fill) fill.style.opacity = '0.35';
+  }
+  selectedZone = label;
+  const lbl = document.getElementById('bodyMapLabel');
+  lbl.textContent = '📍 ' + label;
+  lbl.classList.remove('empty');
+}
+
+// ======= CHIPS =======
+function toggleChip(el, groupId) {
+  const group = groupId || 'symptomsChips';
+  el.classList.toggle('selected');
+  if (el.textContent.includes('Sem sintomas') || el.textContent.includes('Sem apetite') === false && el.textContent.includes('✅')) {
+    document.querySelectorAll('#' + group + ' .chip').forEach(c => { if (c !== el) c.classList.remove('selected'); });
+  } else {
+    const none = [...document.querySelectorAll('#' + group + ' .chip')].find(c => c.textContent.includes('✅ Sem sintomas'));
+    if (none) none.classList.remove('selected');
+  }
+}
+
+// ======= SYMPTOMS DIARY =======
+function getSymptoms() { return JSON.parse(localStorage.getItem('tirzSymptoms') || '[]'); }
+function saveSymptomData(s) { localStorage.setItem('tirzSymptoms', JSON.stringify(s)); }
+
+function saveSymptoms() {
+  const date = document.getElementById('symptomDate').value;
+  if (!date) { showToast('⚠️ Informe a data'); return; }
+  const chips = [...document.querySelectorAll('#symptomsChips .chip.selected')].map(c => c.textContent.trim());
+  if (!chips.length) { showToast('⚠️ Selecione pelo menos um sintoma'); return; }
+  const notes = document.getElementById('symptomNotes').value.trim();
+  const all = getSymptoms().filter(s => s.date !== date);
+  all.push({ date, chips, notes });
+  all.sort((a,b) => b.date.localeCompare(a.date));
+  saveSymptomData(all);
+  showToast('✅ Diário salvo!');
+  document.querySelectorAll('#symptomsChips .chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('symptomNotes').value = '';
+  renderSymptomHistory();
+}
+
+function renderSymptomHistory() {
+  const all = getSymptoms();
+  const el = document.getElementById('symptomHistoryList');
+  if (!all.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🌡</div><p>Nenhum registro ainda.<br>Comece registrando como está hoje!</p></div>';
+    return;
+  }
+  el.innerHTML = all.map(s => {
+    const d = new Date(s.date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'short'});
+    const chips = s.chips.map(c => `<span class="symptom-tag">${c}</span>`).join('');
+    return `<div class="history-item">
+      <div class="history-dot" style="font-size:9px;width:44px;height:44px">
+        ${d.getDate().toString().padStart(2,'0')}<small>${d.toLocaleString('pt-BR',{month:'short'}).replace('.','')}</small>
+      </div>
+      <div class="history-info">
+        <div class="history-date">${dateStr}</div>
+        <div class="history-symptoms" style="margin-top:5px">${chips}</div>
+        ${s.notes ? `<div style="font-size:12px;color:var(--text-soft);margin-top:4px;">📝 ${s.notes}</div>` : ''}
+      </div>
+      <button class="delete-btn" onclick="deleteSymptom('${s.date}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteSymptom(date) {
+  const key = 'del_sym_' + date;
+  if (!window[key]) {
+    window[key] = true;
+    showToast('⚠️ Toque novamente para apagar');
+    setTimeout(() => { window[key] = false; }, 3000);
+    return;
+  }
+  window[key] = false;
+  saveSymptomData(getSymptoms().filter(s => s.date !== date));
+  renderSymptomHistory();
+  showToast('🗑 Registro apagado');
+}
+
+// ======= SAVE APPLICATION =======
+function saveApplication() {
+  const dt = document.getElementById('appDateTime').value;
+  if (!dt) { showToast('⚠️ Informe a data e hora'); return; }
+  const entry = {
+    id: Date.now(),
+    datetime: dt,
+    dose: currentDose,
+    site: selectedZone,
+    symptoms: [],
+    notes: document.getElementById('appNotes').value.trim()
+  };
+  const apps = getApps();
+  apps.unshift(entry);
+  saveApps(apps);
+  updateHeaderDose();
+  showToast('✅ Aplicação salva!');
+  document.getElementById('appNotes').value = '';
+  // Reset body map
+  document.querySelectorAll('.zone').forEach(z => { z.classList.remove('active'); const f = z.querySelector('.zone-fill'); if(f) f.style.opacity=''; });
+  selectedZone = '';
+  const lbl = document.getElementById('bodyMapLabel');
+  lbl.textContent = 'Toque em uma área do corpo';
+  lbl.classList.add('empty');
+
+  // Next dose — add 7 days using local date math only
+  const appDate = new Date(dt + (dt.length === 10 ? 'T12:00:00' : ''));
+  const nextDoseDate = new Date(appDate.getFullYear(), appDate.getMonth(), appDate.getDate() + 7,
+    appDate.getHours(), appDate.getMinutes());
+  document.getElementById('nextDoseDate').value = localDatetimeStr(nextDoseDate);
+  document.getElementById('nextDoseCard').style.display = 'block';
+  updateSummary();
+}
+
+// ======= CALENDAR ICS =======
+function generateICS(dateTimeStr) {
+  const dt = new Date(dateTimeStr);
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  // Formato local floating (sem timezone) — iOS respeita a hora local
+  const fmtLocal = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
+    'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  // DTSTAMP em UTC (obrigatório pelo RFC 5545)
+  const fmtUTC = d => d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) +
+    'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+  const dtEnd = new Date(dt.getTime() + 30 * 60000);
+  const uid = 'tirze-' + Date.now() + '@minhatirzepatida';
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'CALSCALE:GREGORIAN',
+    'PRODID:-//Minha Tirzepatida//APP//PT',
+    'BEGIN:VEVENT',
+    'UID:' + uid,
+    'DTSTAMP:' + fmtUTC(now),
+    'DTSTART:' + fmtLocal(dt),
+    'DTEND:' + fmtLocal(dtEnd),
+    'SUMMARY:💉 Tirzepatida - dia de aplicar',
+    'DESCRIPTION:Hoje e dia de aplicar sua tirzepatida. Lembre de registrar no app!',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT0S',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:💉 Tirzepatida - dia de aplicar',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+}
+
+async function openCalendarEvent(dateTimeStr) {
+  const ics = generateICS(dateTimeStr);
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const file = new File([blob], 'proxima-dose.ics', { type: 'text/calendar' });
+
+  // iOS PWA: Web Share API com arquivo .ics
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Proxima dose - Tirzepatida' });
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback Android/desktop: download direto
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'proxima-dose.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch(e) {
+    showToast('⚠️ Não foi possível abrir o Calendário');
+  }
+}
+
+// ======= NEXT DOSE =======
+function scheduleNextDose() {
+  const val = document.getElementById('nextDoseDate').value;
+  if (!val) { showToast('⚠️ Selecione uma data'); return; }
+  localStorage.setItem('tirzNextDose', val);
+  updateNextDoseBadge();
+  document.getElementById('nextDoseCard').style.display = 'none';
+  openCalendarEvent(val);
+}
+
+function showNextDoseInfo() {
+  const next = localStorage.getItem('tirzNextDose');
+  if (!next) { showToast('Nenhuma dose agendada ainda'); return; }
+  const nextDate = next.slice(0,10);
+  const todayStr = localDateStr();
+  const tom = new Date(); tom.setDate(tom.getDate()+1);
+  const tomorrowStr = localDateStr(tom);
+  const label = nextDate === todayStr ? 'Hoje' : nextDate === tomorrowStr ? 'Amanhã' :
+    new Date(nextDate+'T12:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+  showToast('📅 Próxima dose: ' + label);
+}
+
+// ======= DATE HELPERS =======
+function localDateStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function localDatetimeStr(d) {
+  d = d || new Date();
+  return localDateStr(d) + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function updateNextDoseBadge() {
+  const next = localStorage.getItem('tirzNextDose');
+  const badge = document.getElementById('nextDoseBadge');
+  const infoDiv = document.getElementById('nextDoseInfo');
+  const infoText = document.getElementById('nextDoseInfoText');
+  badge.textContent = '📅 próxima dose';
+  badge.classList.remove('active');
+  if (!next) { infoDiv.style.display='none'; return; }
+
+  // Use only the date part for comparison — always compare local dates
+  const nextDate = next.slice(0,10);
+  const todayStr = localDateStr();
+  const tom = new Date(); tom.setDate(tom.getDate()+1);
+  const tomorrowStr = localDateStr(tom);
+  const dateStr = new Date(nextDate+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+
+  infoDiv.style.display = 'block';
+  if (nextDate === todayStr) {
+    infoText.innerHTML = 'HOJE! 💉';
+    infoText.style.color = 'var(--rose)';
+    badge.classList.add('active');
+  } else if (nextDate === tomorrowStr) {
+    infoText.innerHTML = `${dateStr}<br>amanhã`;
+    infoText.style.color = 'var(--text)';
+  } else if (nextDate > todayStr) {
+    const diff = Math.round((new Date(nextDate+'T12:00:00') - new Date(todayStr+'T12:00:00')) / 86400000);
+    infoText.innerHTML = `${dateStr}<br>faltam ${diff} dias`;
+    infoText.style.color = 'var(--text)';
+  } else {
+    infoText.innerHTML = `${dateStr}<br><span style="color:var(--rose)">data passada</span>`;
+    infoText.style.color = 'var(--text)';
+  }
+}
+
+function updateHeaderDose() {
+  try {
+    const apps = getApps();
+    const el = document.getElementById('headerDose');
+    if (el) el.textContent = apps.length > 0 ? apps[0].dose.toFixed(1) : '—';
+    updateNextDoseBadge();
+  } catch(e) { console.error('updateHeaderDose:', e); }
+}
+
+// ======= HISTORY =======
+function renderHistory() {
+  const apps = getApps();
+  const symptoms = getSymptoms();
+  const container = document.getElementById('historyList');
+  if (!apps.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">💉</div><p>Nenhuma aplicação ainda.<br>Registre sua primeira dose!</p></div>`;
+    return;
+  }
+  container.innerHTML = apps.map(a => {
+    const d = new Date(a.datetime);
+    const day = d.getDate().toString().padStart(2,'0');
+    const mon = d.toLocaleString('pt-BR',{month:'short'}).replace('.','');
+    const time = d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const appDate = a.datetime.slice(0,10);
+
+    // Find symptoms registered on same day or up to 3 days after application
+    const linked = symptoms.filter(s => {
+      const diff = (new Date(s.date+' 12:00') - new Date(appDate+' 12:00')) / 86400000;
+      return diff >= 0 && diff <= 3;
+    });
+
+    const syms = linked.flatMap(s => s.chips).filter((v,i,arr)=>arr.indexOf(v)===i)
+      .map(c => `<span class="symptom-tag">${c}</span>`).join('');
+
+    return `<div class="history-item">
+      <div class="history-dot">${day}<small>${mon}</small></div>
+      <div class="history-info">
+        <div class="history-dose">${a.dose.toFixed(1)} mg${a.site ? ' · '+a.site : ''}</div>
+        <div class="history-date">${d.toLocaleDateString('pt-BR',{weekday:'long'})} às ${time}</div>
+        ${syms ? `<div style="margin-top:5px"><div style="font-size:10px;color:var(--text-soft);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px">sintomas pós-dose</div><div class="history-symptoms">${syms}</div></div>` : ''}
+        ${a.notes ? `<div style="font-size:12px;color:var(--text-soft);margin-top:4px;">📝 ${a.notes}</div>` : ''}
+      </div>
+      <button class="delete-btn" onclick="deleteApp(${a.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteApp(id) {
+  const key = 'del_app_' + id;
+  if (!window[key]) {
+    window[key] = true;
+    showToast('⚠️ Toque novamente para apagar');
+    setTimeout(() => { window[key] = false; }, 3000);
+    return;
+  }
+  window[key] = false;
+  saveApps(getApps().filter(a => a.id !== id));
+  renderHistory(); updateHeaderDose(); updateSummary();
+  showToast('🗑 Aplicação apagada');
+}
+
+// ======= WEIGHT GOAL =======
+function loadGoalForm() {
+  const g = getGoal();
+  if (!g) return;
+  document.getElementById('goalStart').value = g.start || '';
+  document.getElementById('goalCurrent').value = g.current || '';
+  document.getElementById('goalTarget').value = g.target || '';
+  document.getElementById('goalStartDate').value = g.startDate || '';
+}
+
+function saveGoal() {
+  const start = parseFloat(document.getElementById('goalStart').value);
+  const current = parseFloat(document.getElementById('goalCurrent').value);
+  const target = parseFloat(document.getElementById('goalTarget').value);
+  const startDate = document.getElementById('goalStartDate').value;
+  if (isNaN(start) || isNaN(target)) { showToast('⚠️ Preencha peso inicial e meta'); return; }
+  if (target >= start) { showToast('⚠️ A meta deve ser menor que o peso inicial'); return; }
+  const currentVal = isNaN(current) ? start : current;
+  saveGoalData({ start, current: currentVal, target, startDate });
+  updateGoalProgress();
+  showToast('🎯 Meta salva!');
+}
+
+function updateGoalProgress() {
+  const g = getGoal();
+  const weights = getWeights();
+  const card = document.getElementById('goalProgressCard');
+  if (!g) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  // atual = último peso do diário > peso atual da meta > peso inicial
+  const currentW = weights.length > 0
+    ? weights[weights.length - 1].kg
+    : (g.current || g.start);
+
+  const totalLoss = g.start - g.target;
+  const achieved = Math.max(0, g.start - currentW);
+  const pct = Math.min(100, Math.round((achieved / totalLoss) * 100));
+  const remaining = Math.max(0, currentW - g.target);
+
+  document.getElementById('gpStart').textContent = g.start.toFixed(1);
+  document.getElementById('gpCurrent').textContent = currentW.toFixed(1);
+  document.getElementById('gpTarget').textContent = g.target.toFixed(1);
+  document.getElementById('gpStartLabel').textContent = g.start.toFixed(1) + ' kg';
+  document.getElementById('gpTargetLabel').textContent = g.target.toFixed(1) + ' kg';
+  document.getElementById('goalBarFill').style.width = pct + '%';
+
+  if (remaining <= 0) {
+    document.getElementById('goalRemaining').innerHTML = '🎉 <strong style="color:var(--sage)">Meta atingida! Parabéns!</strong>';
+  } else {
+    document.getElementById('goalRemaining').innerHTML = `Faltam <strong>${remaining.toFixed(1)} kg</strong> para a meta · ${pct}% concluído`;
+  }
+}
+
+// ======= WEIGHT =======
+function saveWeight() {
+  const date = document.getElementById('weightDate').value;
+  if (!date) { showToast('⚠️ Informe a data'); return; }
+  const inputVal = parseFloat(document.getElementById('weightDisplay').value);
+  if (isNaN(inputVal) || inputVal < 20 || inputVal > 400) { showToast('⚠️ Peso inválido'); return; }
+  currentWeight = Math.round(inputVal * 10) / 10;
+  // Permite múltiplos registros — só substitui se for a mesma data
+  const weights = getWeights().filter(w => w.date !== date);
+  weights.push({ date, kg: currentWeight });
+  weights.sort((a,b) => a.date.localeCompare(b.date));
+  saveWeights(weights);
+  showToast('✅ Peso salvo! ' + currentWeight.toFixed(1) + ' kg em ' + new Date(date+'T12:00').toLocaleDateString('pt-BR'));
+  drawWeightChart(); renderWeightHistory(); updateGoalProgress(); updateSummary();
+}
+
+function drawWeightChart() {
+  const weights = getWeights();
+  const canvas = document.getElementById('weightChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 300;
+  const H = 140;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0,0,W,H);
+  if (weights.length < 2) {
+    ctx.fillStyle='#c4a0a4'; ctx.font='13px DM Sans'; ctx.textAlign='center';
+    ctx.fillText('Registre pelo menos 2 pesos para ver o gráfico', W/2, H/2);
+    return;
+  }
+  const kgs = weights.map(w => w.kg);
+  const goal = getGoal();
+  const allVals = [...kgs, ...(goal ? [goal.target] : [])];
+  const min = Math.min(...allVals) - 1;
+  const max = Math.max(...allVals) + 1;
+  const pad = {t:14,r:12,b:30,l:36};
+  const gW = W-pad.l-pad.r, gH = H-pad.t-pad.b;
+  const toX = i => pad.l + (i/(weights.length-1))*gW;
+  const toY = v => pad.t + (1-(v-min)/(max-min))*gH;
+
+  // Grid
+  ctx.strokeStyle='rgba(196,113,122,0.08)'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.t+(i/4)*gH;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();const val=max-(i/4)*(max-min);ctx.fillStyle='#b0888c';ctx.font='10px DM Sans';ctx.textAlign='right';ctx.fillText(val.toFixed(1),pad.l-4,y+3);}
+
+  // Goal line
+  if (goal) {
+    const gy = toY(goal.target);
+    ctx.setLineDash([5,3]); ctx.strokeStyle='#7A9E8E'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(pad.l,gy); ctx.lineTo(W-pad.r,gy); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle='#7A9E8E'; ctx.font='bold 9px DM Sans'; ctx.textAlign='left';
+    ctx.fillText('🎯 meta', pad.l+4, gy-3);
+  }
+
+  // Area
+  const grad = ctx.createLinearGradient(0,pad.t,0,pad.t+gH);
+  grad.addColorStop(0,'rgba(196,113,122,0.18)'); grad.addColorStop(1,'rgba(196,113,122,0)');
+  ctx.beginPath(); ctx.moveTo(toX(0),toY(weights[0].kg));
+  weights.forEach((w,i)=>i>0&&ctx.lineTo(toX(i),toY(w.kg)));
+  ctx.lineTo(toX(weights.length-1),pad.t+gH); ctx.lineTo(toX(0),pad.t+gH);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.strokeStyle='#C4717A'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.lineCap='round';
+  weights.forEach((w,i)=>i===0?ctx.moveTo(toX(i),toY(w.kg)):ctx.lineTo(toX(i),toY(w.kg))); ctx.stroke();
+
+  // Dots
+  weights.forEach((w,i)=>{
+    ctx.beginPath(); ctx.arc(toX(i),toY(w.kg),4,0,Math.PI*2); ctx.fillStyle='#C4717A'; ctx.fill();
+    ctx.fillStyle='#2D1B1E'; ctx.font='bold 10px DM Sans'; ctx.textAlign='center';
+    ctx.fillText(w.kg.toFixed(1),toX(i),toY(w.kg)-7);
+    const d=new Date(w.date+'T12:00:00'); ctx.fillStyle='#b0888c'; ctx.font='9px DM Sans';
+    ctx.fillText(d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),toX(i),H-8);
+  });
+}
+
+function renderWeightHistory() {
+  const weights = getWeights();
+  const el = document.getElementById('weightHistory');
+  if (!weights.length) { el.innerHTML='<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:10px 0">Nenhum peso registrado ainda.</p>'; return; }
+  el.innerHTML = [...weights].reverse().map(w=>{
+    const d = new Date(w.date+'T12:00:00');
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;">
+      <span style="color:var(--text-soft)">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'2-digit'})}</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <strong>${w.kg.toFixed(1)} kg</strong>
+        <button onclick="deleteWeight('${w.date}')" style="background:none;border:none;color:var(--rose-light);font-size:16px;cursor:pointer;line-height:1;padding:2px">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteWeight(date) {
+  const key = 'del_wt_' + date;
+  if (!window[key]) {
+    window[key] = true;
+    showToast('⚠️ Toque novamente para apagar');
+    setTimeout(() => { window[key] = false; }, 3000);
+    return;
+  }
+  window[key] = false;
+  saveWeights(getWeights().filter(w => w.date !== date));
+  drawWeightChart(); renderWeightHistory(); updateGoalProgress(); updateSummary();
+  showToast('🗑 Peso removido');
+}
+
+// ======= SUMMARY =======
+function updateSummary() {
+  try {
+    const apps = getApps();
+    const weights = getWeights();
+
+    const elTotal = document.getElementById('statTotal');
+    const elDose = document.getElementById('statDose');
+    const elLoss = document.getElementById('statLoss');
+    if (!elTotal || !elDose || !elLoss) return; // page not rendered yet
+
+    elTotal.textContent = apps.length;
+    elDose.textContent = apps.length > 0 ? apps[0].dose.toFixed(1) : '—';
+
+    if (weights.length >= 2) {
+      const lost = weights[0].kg - weights[weights.length-1].kg;
+      elLoss.textContent = lost > 0 ? '-'+lost.toFixed(1) : (lost < 0 ? '+'+Math.abs(lost).toFixed(1) : '0');
+    } else if (weights.length === 1) {
+      const goal = getGoal();
+      if (goal && goal.start) {
+        const lost = goal.start - weights[0].kg;
+        elLoss.textContent = lost > 0 ? '-'+lost.toFixed(1) : (lost < 0 ? '+'+Math.abs(lost).toFixed(1) : '0');
+      } else { elLoss.textContent = '—'; }
+    } else { elLoss.textContent = '—'; }
+
+    // Dose progress
+    const doseEl = document.getElementById('doseProgress');
+    if (doseEl) {
+      const doses = [];
+      if (apps.length === 0) {
+        doseEl.innerHTML = '<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:20px 0;line-height:1.6;">Registre sua primeira aplicação para ver a progressão de dose 💉</p>';
+      } else {
+      for (let d = 2.5; d <= 15; d = Math.round((d + 0.5) * 10) / 10) doses.push(d);
+      const currentD = apps[0].dose;
+      const pct = Math.min((currentD/15)*100, 100);
+      const usedDoses = [...new Set(apps.map(a=>a.dose))].sort((a,b)=>a-b);
+      doseEl.innerHTML = `
+        <div class="progress-section">
+          <div class="progress-labels"><span>2.5 mg</span><span>15 mg (máx)</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+          ${doses.map(d=>`<div style="padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;background:${usedDoses.includes(d)?'var(--rose)':'var(--rose-pale)'};color:${usedDoses.includes(d)?'white':'var(--text-soft)'};">${d}mg</div>`).join('')}
+          ${usedDoses.filter(d=>!doses.includes(d)).map(d=>`<div style="padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;background:var(--gold);color:white;">${d}mg ✦</div>`).join('')}
+        </div>
+        <p style="font-size:11px;color:var(--text-soft);margin-top:8px;">✦ doses intermediárias</p>`;
+      }
+    }
+
+    // Rotation summary
+    const rotEl = document.getElementById('rotationSummary');
+    if (rotEl) {
+      const siteCounts = {};
+      apps.forEach(a => { if(a.site) siteCounts[a.site] = (siteCounts[a.site]||0)+1; });
+      if (Object.keys(siteCounts).length === 0) {
+        rotEl.innerHTML = '<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:10px 0">Nenhum local registrado ainda</p>';
+      } else {
+        const total = apps.filter(a=>a.site).length;
+        rotEl.innerHTML = Object.entries(siteCounts).sort((a,b)=>b[1]-a[1]).map(([site,count])=>`
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span>${site}</span><span style="font-weight:600;color:var(--rose)">${count}x</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(count/total*100)}%"></div></div>
+          </div>`).join('');
+      }
+    }
+  } catch(e) { console.error('updateSummary:', e); }
+}
+
+// ======= NOTIFICATIONS =======
+
+
+// ======= EXPORT =======
+function exportData() {
+  const apps=getApps(), weights=getWeights(), goal=getGoal(), symptoms=getSymptoms();
+  let txt='=== TIRZEPATIDA — MEU HISTÓRICO ===\n\n';
+  if(goal) txt+=`META: ${goal.start}kg → ${goal.target}kg (início: ${goal.startDate||'n/d'})\n\n`;
+  txt+='--- APLICAÇÕES ---\n';
+  if(!apps.length) txt+='Nenhuma aplicação registrada.\n';
+  apps.forEach(a=>{
+    const d=new Date(a.datetime);
+    txt+=`${d.toLocaleString('pt-BR')} | ${a.dose}mg | ${a.site||'s/local'}\n`;
+    if(a.notes) txt+=`   Obs: ${a.notes}\n`;
+  });
+  txt+='\n--- SINTOMAS ---\n';
+  if(!symptoms.length) txt+='Nenhum sintoma registrado.\n';
+  symptoms.forEach(s=>{ txt+=`${s.date} | ${s.chips.join(', ')}\n`; if(s.notes) txt+=`   ${s.notes}\n`; });
+  txt+='\n--- PESO ---\n';
+  if(!weights.length) txt+='Nenhum peso registrado.\n';
+  weights.forEach(w=>{txt+=`${w.date} | ${w.kg}kg\n`;});
+  try {
+    const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    window.open(url,'_blank');
+    showToast('📤 Abriu em nova aba — salve a página!');
+  } catch(e) {
+    prompt('Copie seus dados:', txt);
+  }
+}
+
+function clearData() {
+  if(!window._clearStep) {
+    window._clearStep=true;
+    showToast('⚠️ Toque novamente para confirmar');
+    setTimeout(()=>{ window._clearStep=false; },3000);
+    return;
+  }
+  window._clearStep=false;
+  ['tirzApps','tirzWeights','tirzNextDose','tirzGoal','tirzSymptoms'].forEach(k=>localStorage.removeItem(k));
+  showToast('🗑 Dados apagados');
+  updateHeaderDose(); updateNextDoseBadge(); updateSummary(); updateGoalProgress();
+}
+
+// ======= TOAST =======
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+window.addEventListener('resize',()=>{ if(document.getElementById('page-peso').classList.contains('active')) drawWeightChart(); });
+</script>
+</body>
+</html>
