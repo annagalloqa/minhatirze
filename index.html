@@ -745,8 +745,8 @@ function updateCalendarTips() {
     if (t1) t1.innerHTML = '💡 Após agendar, toque em <strong>"Abrir no Calendário do iPhone"</strong> para salvar o lembrete direto no app Calendário.';
     if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong> → <strong>"Abrir no Calendário do iPhone"</strong>. Na tela que abrir: escolha <strong>"Pessoal"</strong> e toque em <strong>✓ Adicionar</strong>. 📱';
   } else {
-    if (t1) t1.innerHTML = '💡 Toque em <strong>"Agendar Próxima Dose"</strong> — o Google Calendar abre com o evento preenchido. É só tocar em <strong>Salvar</strong>!';
-    if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong>. O Google Calendar abre com data e lembrete — toque em <strong>Salvar</strong> e volte ao app. 🎉';
+    if (t1) t1.innerHTML = '💡 Toque em <strong>"Agendar Próxima Dose"</strong> e depois no link azul <strong>"Abrir Google Calendar"</strong>. É só Salvar!';
+    if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong> → link azul <strong>"Abrir Google Calendar"</strong> → <strong>Salvar</strong>. Depois é só voltar ao app! 🎉';
   }
 }
 
@@ -917,17 +917,10 @@ function initApp() {
   updateCalendarTips();
   updateUIConverter();
   setTimeout(() => { drawWeightChart(); updateHeaderDose(); updateSummary(); }, 100);
-  // Notifications + Calendar return detection
+  // Notifications
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      updateNextDoseBadge();
-      // Android: volta da aba do Google Calendar
-      setTimeout(checkCalendarReturn, 400);
-    }
+    if (document.visibilityState === 'visible') updateNextDoseBadge();
   });
-  // iOS: fecha janelinha do Calendário
-  window.addEventListener('pageshow', () => checkCalendarReturn());
-  window.addEventListener('focus', () => setTimeout(checkCalendarReturn, 600));
 }
 
 
@@ -1126,17 +1119,6 @@ function saveApplication() {
   updateSummary();
 }
 
-// ======= CALENDAR CONFIRMATION =======
-function checkCalendarReturn() {
-  if (!window._tirzeCalendarPending) return;
-  window._tirzeCalendarPending = false;
-  const link = document.getElementById('calendarNativeLink');
-  const hint = document.getElementById('calendarIosHint');
-  if (link) link.style.display = 'none';
-  if (hint) hint.style.display = 'none';
-  showToast('✅ Pronto! Evento salvo no Calendário 📅');
-}
-
 // ======= CALENDAR ICS =======
 function generateICS(dateTimeStr) {
   const dt = new Date(dateTimeStr);
@@ -1175,28 +1157,29 @@ function generateICS(dateTimeStr) {
 function openCalendarEvent(dateTimeStr) {
   const ics = generateICS(dateTimeStr);
 
-  // Flag para mostrar confirmação depois
-  window._tirzeCalendarPending = true;
-
   if (isIOS) {
-    // iOS: criar link visível com .ics — usuário toca e abre Calendário nativo
+    // iOS: link visível .ics → abre Calendário nativo
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.getElementById('calendarNativeLink');
     link.href = url;
     link.style.display = 'block';
     link.textContent = '📅 Abrir no Calendário do iPhone';
-    // Instrução de como salvar
     const hint = document.getElementById('calendarIosHint');
     if (hint) hint.style.display = 'block';
+    // Ao tocar no link, esconde botão e mostra toast neutro
+    link.onclick = function() {
+      setTimeout(() => {
+        link.style.display = 'none';
+        if (hint) hint.style.display = 'none';
+        showToast('📅 De volta! Se salvou, o evento está no Calendário. Se não, toque em Agendar novamente.');
+      }, 3000);
+    };
     showToast('📅 Toque no botão verde e siga a instrução ⬇️');
-    // Timer: assume que o usuário salvou em ~5 segundos
-    setTimeout(checkCalendarReturn, 5000);
     return;
   }
 
-  // Android: Google Calendar via HTTPS — funciona em qualquer navegador
-  // (Chrome, Brave, Samsung Internet, Firefox, etc.)
+  // Android: Google Calendar via link <a> — funciona Chrome, Brave, Samsung, Firefox
   const dt = new Date(dateTimeStr);
   const pad = n => String(n).padStart(2, '0');
   const fmt = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
@@ -1207,8 +1190,24 @@ function openCalendarEvent(dateTimeStr) {
     '&dates=' + fmt(dt) + '/' + fmt(dtEnd) +
     '&details=' + encodeURIComponent('Hoje é dia de aplicar sua tirzepatida. Lembre de registrar no app!') +
     '&ctz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  window.open(gcalUrl, '_blank');
-  showToast('📅 Google Calendar abriu — toque em Salvar e depois volte ao app');
+
+  // Link visível em vez de window.open (funciona no Brave)
+  const a = document.createElement('a');
+  a.href = gcalUrl;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = '📅 Abrir Google Calendar';
+  a.style.cssText = 'display:block;padding:14px;background:#4285f4;color:white;border-radius:12px;text-align:center;text-decoration:none;font-weight:600;margin-top:10px;';
+  const card = document.getElementById('nextDoseCard');
+  if (card) {
+    // Remove link antigo se existir
+    const old = document.getElementById('calendarNativeLink');
+    if (old && old.parentNode) old.remove();
+    card.appendChild(a);
+  }
+  showToast('📅 Toque no link azul para abrir o Google Calendar');
+  // Esconde o link depois de um tempo
+  setTimeout(() => { if (a.parentNode) a.remove(); }, 15000);
 }
 
 // ======= NEXT DOSE =======
