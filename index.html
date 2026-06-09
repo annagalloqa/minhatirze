@@ -914,9 +914,36 @@ function initApp() {
   updateCalendarTips();
   updateUIConverter();
   setTimeout(() => { drawWeightChart(); updateHeaderDose(); updateSummary(); }, 100);
-
+  // Notifications
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') updateNextDoseBadge();
+    if (document.visibilityState === 'visible') {
+      updateNextDoseBadge();
+      // Se voltou do Calendário, mostra confirmação
+      if (window._tirzeCalendarPending) {
+        window._tirzeCalendarPending = false;
+        // Esconde o botão e o aviso
+        const link = document.getElementById('calendarNativeLink');
+        const hint = document.getElementById('calendarIosHint');
+        if (link) link.style.display = 'none';
+        if (hint) hint.style.display = 'none';
+        setTimeout(() => {
+          showToast('✅ Pronto! O evento foi enviado para o Calendário 📅');
+        }, 500);
+      }
+    }
+  });
+  // pageshow: detecta retorno ao Safari/PWA (iOS)
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted && window._tirzeCalendarPending) {
+      window._tirzeCalendarPending = false;
+      const link = document.getElementById('calendarNativeLink');
+      const hint = document.getElementById('calendarIosHint');
+      if (link) link.style.display = 'none';
+      if (hint) hint.style.display = 'none';
+      setTimeout(() => {
+        showToast('✅ Pronto! O evento foi enviado para o Calendário 📅');
+      }, 500);
+    }
   });
 }
 
@@ -1167,9 +1194,11 @@ function openCalendarEvent(dateTimeStr) {
     link.href = url;
     link.style.display = 'block';
     link.textContent = '📅 Abrir no Calendário do iPhone';
-    // Mostra instrução de como salvar (escolher calendário antes)
+    // Mostra instrução de como salvar
     const hint = document.getElementById('calendarIosHint');
     if (hint) hint.style.display = 'block';
+    // Flag: quando voltar do Calendário, mostra confirmação
+    window._tirzeCalendarPending = true;
     showToast('📅 Toque no botão verde e siga a instrução abaixo ⬇️');
     return;
   }
