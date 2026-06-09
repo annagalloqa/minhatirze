@@ -271,12 +271,12 @@
     </div>
   </div>
 
-  <!-- Android steps -->
+  <!-- Android steps — genérico para qualquer navegador -->
   <div class="install-card" id="installAndroid" style="display:none">
-    <div class="install-card-title">🤖 Instalar no Android (Chrome)</div>
+    <div class="install-card-title">🤖 Instalar no Android</div>
     <div class="install-step">
       <div class="install-step-num">1</div>
-      <div class="install-step-text">Toque no menu <strong>⋮</strong> no canto superior direito do Chrome</div>
+      <div class="install-step-text">Toque no menu <strong>⋮</strong> (canto superior direito) ou <strong>☰</strong> do seu navegador</div>
     </div>
     <div class="install-step">
       <div class="install-step-num">2</div>
@@ -746,8 +746,8 @@ function updateCalendarTips() {
     if (t1) t1.innerHTML = '💡 Após agendar, toque em <strong>"Abrir no Calendário do iPhone"</strong> para salvar o lembrete direto no app Calendário.';
     if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong> → <strong>"Abrir no Calendário do iPhone"</strong>. Na tela que abrir: escolha <strong>"Pessoal"</strong> e toque em <strong>✓ Adicionar</strong>. 📱';
   } else {
-    if (t1) t1.innerHTML = '💡 Toque em <strong>"Agendar Próxima Dose"</strong> — o Google Calendar abre com o evento preenchido. É só tocar em <strong>Salvar</strong>!';
-    if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong>. O Google Calendar abre com data e lembrete — toque em <strong>Salvar</strong> e pronto! 🎉';
+    if (t1) t1.innerHTML = '💡 Toque em <strong>"Agendar Próxima Dose"</strong> — o arquivo do evento é baixado. Toque na notificação para abrir no Calendário!';
+    if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong>. O Android baixa o evento — toque na notificação de download e escolha <strong>Calendário</strong> para salvar. 🎉';
   }
 }
 
@@ -1175,11 +1175,6 @@ function generateICS(dateTimeStr) {
 
 function openCalendarEvent(dateTimeStr) {
   const ics = generateICS(dateTimeStr);
-  const dt = new Date(dateTimeStr);
-  const pad = n => String(n).padStart(2, '0');
-  const fmt = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
-    'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
-  const dtEnd = new Date(dt.getTime() + 30 * 60000);
 
   // Flag para mostrar confirmação depois
   window._tirzeCalendarPending = true;
@@ -1201,17 +1196,18 @@ function openCalendarEvent(dateTimeStr) {
     return;
   }
 
-  // Android + desktop: Google Calendar
-  const gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-    '&text=' + encodeURIComponent('💉 Tirzepatida - dia de aplicar') +
-    '&dates=' + fmt(dt) + '/' + fmt(dtEnd) +
-    '&details=' + encodeURIComponent('Hoje é dia de aplicar sua tirzepatida. Lembre de registrar no app!') +
-    '&ctz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-
-  window.open(gcalUrl, '_blank');
-  showToast('📅 Google Calendar abriu — salve o evento e volte aqui!');
-  // Timer: quando voltar da outra aba, mostra confirmação
-  setTimeout(checkCalendarReturn, 8000);
+  // Android: download .ics — o Android oferece abrir no app Calendário nativo
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dose-tirze.ics';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToast('📅 Toque na notificação de download para abrir no Calendário');
 }
 
 // ======= NEXT DOSE =======
