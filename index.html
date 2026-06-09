@@ -492,9 +492,14 @@
       <label>Data da Próxima Dose</label>
       <input type="datetime-local" id="nextDoseDate">
     </div>
-    <button class="btn-primary" onclick="scheduleNextDose()">📅 Adicionar ao Calendário</button>
+    <button class="btn-primary" onclick="scheduleNextDose()">📅 Agendar Próxima Dose</button>
+    <!-- iOS: link para abrir no app Calendário nativo -->
+    <a id="calendarNativeLink" href="#" download="dose-tirze.ics"
+       style="display:none;width:100%;padding:14px;background:var(--sage);color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;text-align:center;text-decoration:none;margin-top:10px;display:none;">
+      📅 Abrir no Calendário do iPhone
+    </a>
   <div style="margin-top:10px;padding:10px 12px;background:var(--rose-pale);border-radius:10px;border:1px solid var(--rose-light)">
-    <p id="calendarTip" style="font-size:12px;color:var(--rose);line-height:1.5;">💡 No painel que abre: toque em <strong>Calendário</strong> → toque em <strong>Adicionar ao Calendário</strong> → confirme com o <strong>ícone ✓</strong> no canto superior direito.</p>
+    <p id="calendarTip" style="font-size:12px;color:var(--rose);line-height:1.5;">💡 Após agendar, toque em <strong>"Abrir no Calendário do iPhone"</strong> para salvar o lembrete direto no app Calendário.</p>
   </div>
   </div>
 </div>
@@ -655,7 +660,7 @@
       <span class="notif-icon">🗓</span>
       <div class="notif-text"><strong>Lembrete via Calendário</strong><span>Automático ao agendar cada dose</span></div>
     </div>
-    <p id="calendarTipResume" style="font-size:12px;color:var(--text-soft);line-height:1.6;margin-top:12px;">Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. O Google Calendar abre com data e lembrete preenchidos — é só tocar em <strong>Salvar</strong>. O evento sincroniza automaticamente com o Calendário do seu iPhone. ✨</p>
+    <p id="calendarTipResume" style="font-size:12px;color:var(--text-soft);line-height:1.6;margin-top:12px;">Após salvar uma aplicação, toque em <strong>"Agendar Próxima Dose"</strong> e depois em <strong>"Abrir no Calendário do iPhone"</strong>. O evento aparece direto no seu app Calendário com lembrete! 📱</p>
   </div>
 
   <div class="card" id="installCard" style="display:none">
@@ -733,12 +738,11 @@ function installApp() {
 }
 
 function updateCalendarTips() {
-  // Unificado — Google Calendar funciona em todos os dispositivos
-  const tip = '💡 Toque em <strong>"Adicionar ao Calendário"</strong> — o Google Calendar abre com o evento preenchido. Toque em <strong>Salvar</strong> e pronto! O lembrete fica salvo na sua conta Google, acessível em qualquer dispositivo. 🎉';
+  const tip = '💡 Após agendar, toque em <strong>"Abrir no Calendário do iPhone"</strong> para salvar o lembrete direto no app Calendário.';
   const t1 = document.getElementById('calendarTip');
   const t2 = document.getElementById('calendarTipResume');
   if (t1) t1.innerHTML = tip;
-  if (t2) t2.innerHTML = 'Após salvar uma aplicação, toque em <strong>"Adicionar ao Calendário"</strong>. O Google Calendar abre com data e lembrete preenchidos — é só tocar em <strong>Salvar</strong>. O evento sincroniza automaticamente com o Calendário do seu iPhone. ✨';
+  if (t2) t2.innerHTML = 'Após salvar uma aplicação, toque em <strong>"Agendar Próxima Dose"</strong> e depois em <strong>"Abrir no Calendário do iPhone"</strong>. O evento aparece direto no seu app Calendário com lembrete! 📱';
 }
 
 // ======= LOGIN =======
@@ -1146,20 +1150,32 @@ function generateICS(dateTimeStr) {
 }
 
 function openCalendarEvent(dateTimeStr) {
+  const ics = generateICS(dateTimeStr);
   const dt = new Date(dateTimeStr);
   const pad = n => String(n).padStart(2, '0');
   const fmt = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
     'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
   const dtEnd = new Date(dt.getTime() + 30 * 60000);
 
-  // Google Calendar — funciona no iPhone, Android e desktop
-  // Abre no navegador e oferece adicionar ao calendário nativo
+  if (isIOS) {
+    // iOS: criar link visível com .ics — usuário toca e Safari abre o Calendário nativo
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.getElementById('calendarNativeLink');
+    link.href = url;
+    link.style.display = 'block';
+    link.textContent = '📅 Abrir no Calendário do iPhone';
+    // Mostra toast lembrando de tocar
+    showToast('📅 Agora toque em "Abrir no Calendário do iPhone" abaixo ⬇️');
+    return;
+  }
+
+  // Android + desktop: Google Calendar
   const gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
     '&text=' + encodeURIComponent('💉 Tirzepatida - dia de aplicar') +
     '&dates=' + fmt(dt) + '/' + fmt(dtEnd) +
     '&details=' + encodeURIComponent('Hoje é dia de aplicar sua tirzepatida. Lembre de registrar no app!') +
     '&ctz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
-
   window.open(gcalUrl, '_blank');
 }
 
@@ -1169,7 +1185,6 @@ function scheduleNextDose() {
   if (!val) { showToast('⚠️ Selecione uma data'); return; }
   localStorage.setItem('tirzNextDose', val);
   updateNextDoseBadge();
-  document.getElementById('nextDoseCard').style.display = 'none';
   openCalendarEvent(val);
 }
 
