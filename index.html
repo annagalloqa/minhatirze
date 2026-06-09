@@ -916,35 +916,24 @@ function initApp() {
   setTimeout(() => { drawWeightChart(); updateHeaderDose(); updateSummary(); }, 100);
   // Notifications
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      updateNextDoseBadge();
-      // Se voltou do Calendário, mostra confirmação
-      if (window._tirzeCalendarPending) {
-        window._tirzeCalendarPending = false;
-        // Esconde o botão e o aviso
-        const link = document.getElementById('calendarNativeLink');
-        const hint = document.getElementById('calendarIosHint');
-        if (link) link.style.display = 'none';
-        if (hint) hint.style.display = 'none';
-        setTimeout(() => {
-          showToast('✅ Pronto! O evento foi enviado para o Calendário 📅');
-        }, 500);
-      }
-    }
+    if (document.visibilityState === 'visible') updateNextDoseBadge();
   });
-  // pageshow: detecta retorno ao Safari/PWA (iOS)
-  window.addEventListener('pageshow', (e) => {
-    if (e.persisted && window._tirzeCalendarPending) {
-      window._tirzeCalendarPending = false;
-      const link = document.getElementById('calendarNativeLink');
-      const hint = document.getElementById('calendarIosHint');
-      if (link) link.style.display = 'none';
-      if (hint) hint.style.display = 'none';
-      setTimeout(() => {
-        showToast('✅ Pronto! O evento foi enviado para o Calendário 📅');
-      }, 500);
-    }
+  // pageshow + focus: detecta retorno da janelinha do Calendário (iOS)
+  window.addEventListener('pageshow', () => checkCalendarReturn());
+  window.addEventListener('focus', () => {
+    // Pequeno delay — a janelinha do Calendário fecha e o foco volta
+    setTimeout(checkCalendarReturn, 600);
   });
+
+  function checkCalendarReturn() {
+    if (!window._tirzeCalendarPending) return;
+    window._tirzeCalendarPending = false;
+    const link = document.getElementById('calendarNativeLink');
+    const hint = document.getElementById('calendarIosHint');
+    if (link) link.style.display = 'none';
+    if (hint) hint.style.display = 'none';
+    showToast('✅ Pronto! Evento salvo no Calendário 📅');
+  }
 }
 
 
