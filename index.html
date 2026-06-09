@@ -495,9 +495,11 @@
     <button class="btn-primary" onclick="scheduleNextDose()">📅 Agendar Próxima Dose</button>
     <!-- iOS: link para abrir no app Calendário nativo -->
     <a id="calendarNativeLink" href="#" download="dose-tirze.ics"
-       style="display:none;width:100%;padding:14px;background:var(--sage);color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;text-align:center;text-decoration:none;margin-top:10px;display:none;">
+       style="display:none;width:100%;padding:14px;background:var(--sage);color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;text-align:center;text-decoration:none;margin-top:10px;">
       📅 Abrir no Calendário do iPhone
     </a>
+    <p id="calendarIosHint" style="display:none;font-size:12px;color:var(--sage);text-align:center;margin-top:8px;line-height:1.6;">
+      ⚠️ <strong>Importante:</strong> na tela que abrir, toque primeiro em <strong>"Adicionar Calendário"</strong> e escolha <strong>"Pessoal"</strong> (ou outro). Depois toque no <strong>✓ Adicionar</strong> azul no canto superior.</p>
   <div style="margin-top:10px;padding:10px 12px;background:var(--rose-pale);border-radius:10px;border:1px solid var(--rose-light)">
     <p id="calendarTip" style="font-size:12px;color:var(--rose);line-height:1.5;">💡 Após agendar, toque em <strong>"Abrir no Calendário do iPhone"</strong> para salvar o lembrete direto no app Calendário.</p>
   </div>
@@ -1165,8 +1167,10 @@ function openCalendarEvent(dateTimeStr) {
     link.href = url;
     link.style.display = 'block';
     link.textContent = '📅 Abrir no Calendário do iPhone';
-    // Mostra toast lembrando de tocar
-    showToast('📅 Agora toque em "Abrir no Calendário do iPhone" abaixo ⬇️');
+    // Mostra instrução de como salvar (escolher calendário antes)
+    const hint = document.getElementById('calendarIosHint');
+    if (hint) hint.style.display = 'block';
+    showToast('📅 Toque no botão verde e siga a instrução abaixo ⬇️');
     return;
   }
 
