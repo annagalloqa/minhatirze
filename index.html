@@ -1195,18 +1195,27 @@ function openCalendarEvent(dateTimeStr) {
     return;
   }
 
-  // Android: download .ics — o Android oferece abrir no app Calendário nativo
+  // Android: abrir .ics em nova aba — Chrome/Android detecta o tipo
+  // e oferece "Abrir com Calendário" sem poluir a página do app
   const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'dose-tirze.ics';
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-  showToast('📅 Toque na notificação de download para abrir no Calendário');
+  const w = window.open(url, '_blank');
+  if (w) {
+    // Abriu em nova aba — o Android mostra download/abrir com Calendário
+    setTimeout(() => { if (!w.closed) w.close(); }, 3000);
+  } else {
+    // Fallback: se popup bloqueado, faz download via link visível
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dose-tirze.ics';
+    a.textContent = '📅 Toque aqui para abrir no Calendário';
+    a.style.cssText = 'display:block;padding:14px;background:var(--sage);color:white;border-radius:12px;text-align:center;text-decoration:none;font-weight:600;margin-top:10px;';
+    const card = document.getElementById('nextDoseCard');
+    if (card) card.appendChild(a);
+    setTimeout(() => { if (a.parentNode) a.remove(); }, 15000);
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
+  showToast('📅 Escolha "Calendário" para salvar o evento');
 }
 
 // ======= NEXT DOSE =======
