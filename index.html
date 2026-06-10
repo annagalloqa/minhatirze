@@ -1553,8 +1553,13 @@ window.onload = () => {
     if (user) {
       loadAndUnlock();
     } else {
-      var skip = initOnboarding();
-      if (skip) initLogin();
+      // Pequeno delay pra evitar flash do onboarding durante redirect
+      setTimeout(function() {
+        if (!auth.currentUser) {
+          var skip = initOnboarding();
+          if (skip) initLogin();
+        }
+      }, 800);
     }
   });
 };
