@@ -423,32 +423,32 @@
 
             <!-- ABDOMEN LEFT -->
             <g class="zone" id="zone-abd-l" onclick="selectZone('abd-l','Abdômen esquerdo')">
-              <rect class="zone-fill" x="70" y="98" width="26" height="46" rx="6" fill="#C4717A"/>
-              <text x="83" y="115" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ABD</text>
-              <text x="83" y="126" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ESQ</text>
-              <rect x="70" y="98" width="26" height="46" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
+              <rect class="zone-fill" x="74" y="98" width="24" height="46" rx="6" fill="#C4717A"/>
+              <text x="86" y="115" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ABD</text>
+              <text x="86" y="126" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ESQ</text>
+              <rect x="74" y="98" width="24" height="46" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
             </g>
             <!-- ABDOMEN RIGHT -->
             <g class="zone" id="zone-abd-r" onclick="selectZone('abd-r','Abdômen direito')">
-              <rect class="zone-fill" x="104" y="98" width="26" height="46" rx="6" fill="#C4717A"/>
-              <text x="117" y="115" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ABD</text>
-              <text x="117" y="126" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">DIR</text>
-              <rect x="104" y="98" width="26" height="46" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
+              <rect class="zone-fill" x="102" y="98" width="24" height="46" rx="6" fill="#C4717A"/>
+              <text x="114" y="115" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ABD</text>
+              <text x="114" y="126" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="102" y="98" width="24" height="46" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
             </g>
 
             <!-- FLANCO LEFT (borda esquerda do tronco) -->
             <g class="zone" id="zone-flanco-l" onclick="selectZone('flanco-l','Flanco esquerdo')">
-              <rect class="zone-fill" x="59" y="98" width="11" height="46" rx="5" fill="#C4717A"/>
-              <text x="64" y="115" text-anchor="middle" font-family="DM Sans" font-size="5.5" fill="#C4717A" font-weight="600">FL</text>
-              <text x="64" y="126" text-anchor="middle" font-family="DM Sans" font-size="5.5" fill="#C4717A" font-weight="600">ES</text>
-              <rect x="59" y="98" width="11" height="46" rx="5" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
+              <rect class="zone-fill" x="59" y="98" width="15" height="46" rx="5" fill="#C4717A"/>
+              <text x="66" y="115" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">FLAN</text>
+              <text x="66" y="127" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">ESQ</text>
+              <rect x="59" y="98" width="15" height="46" rx="5" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
             </g>
             <!-- FLANCO RIGHT (borda direita do tronco) -->
             <g class="zone" id="zone-flanco-r" onclick="selectZone('flanco-r','Flanco direito')">
-              <rect class="zone-fill" x="130" y="98" width="11" height="46" rx="5" fill="#C4717A"/>
-              <text x="135" y="115" text-anchor="middle" font-family="DM Sans" font-size="5.5" fill="#C4717A" font-weight="600">FL</text>
-              <text x="135" y="126" text-anchor="middle" font-family="DM Sans" font-size="5.5" fill="#C4717A" font-weight="600">DI</text>
-              <rect x="130" y="98" width="11" height="46" rx="5" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
+              <rect class="zone-fill" x="126" y="98" width="15" height="46" rx="5" fill="#C4717A"/>
+              <text x="133" y="115" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">FLAN</text>
+              <text x="133" y="127" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="126" y="98" width="15" height="46" rx="5" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5"/>
             </g>
 
             <!-- THIGH LEFT -->
@@ -909,7 +909,7 @@ function saveGoalData(g) { localStorage.setItem('tirzGoal', JSON.stringify(g)); 
 // ======= INIT =======
 window.onload = () => {
   // Force reload if cached version is outdated (PWA cache-bust)
-  const APP_VERSION = '13';
+  const APP_VERSION = '14';
   const cachedVer = localStorage.getItem('tirzAppVersion');
   if (cachedVer && cachedVer !== APP_VERSION) {
     // Nova versão — recarrega sem cache
