@@ -430,8 +430,6 @@
     </div>
   </div>
 
-  <button onclick="closeInstallScreen()" style="background:none;border:none;color:var(--text-soft);font-size:13px;cursor:pointer;text-decoration:underline;margin-top:8px;padding:12px;">Pular — já instalei ✨</button>
-
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -1547,7 +1545,7 @@ async function loadUserData() {
 // ======= INIT =======
 window.onload = () => {
   // Force reload if cached version is outdated (PWA cache-bust)
-  const APP_VERSION = '16';
+  const APP_VERSION = '17';
   const cachedVer = localStorage.getItem('tirzAppVersion');
   if (cachedVer && cachedVer !== APP_VERSION) {
     localStorage.setItem('tirzAppVersion', APP_VERSION);
