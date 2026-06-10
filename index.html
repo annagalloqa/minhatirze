@@ -244,7 +244,7 @@
   #installScreen {
     position: fixed; inset: 0; background: var(--cream);
     display: flex; flex-direction: column; align-items: center;
-    z-index: 10000; overflow-y: auto;
+    z-index: 10003; overflow-y: auto;
     padding: calc(env(safe-area-inset-top,0px) + 48px) 24px calc(env(safe-area-inset-bottom,0px) + 48px);
     animation: fadeIn 0.4s ease;
   }
@@ -269,9 +269,17 @@
   #loginScreen {
     position: fixed; inset: 0; background: var(--cream);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 9999; padding: 32px 28px; animation: fadeIn 0.4s ease;
+    z-index: 10001; padding: 32px 28px; animation: fadeIn 0.4s ease;
+    /* Ignore safe-area to ensure full coverage */
+    padding-top: 32px; padding-bottom: 32px;
   }
   #loginScreen.hidden { display: none; }
+
+  /* Hide app content while login/onboarding is active */
+  body.login-locked .header,
+  body.login-locked .bottom-nav,
+  body.login-locked .page,
+  body.login-locked .toast { display: none !important; }
   .login-logo {
     font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--rose);
     margin-bottom: 6px; text-align: center;
@@ -296,7 +304,7 @@
   #onboardingScreen {
     position: fixed; inset: 0; background: var(--cream);
     display: flex; flex-direction: column;
-    z-index: 10001; overflow: hidden;
+    z-index: 10002; overflow: hidden;
     padding: calc(env(safe-area-inset-top,0px) + 20px) 0 calc(env(safe-area-inset-bottom,0px) + 20px);
   }
   #onboardingScreen.hidden { display: none; }
@@ -330,7 +338,7 @@
     background: none; border: none; font-family: 'DM Sans', sans-serif; width: 100%; }
 </style>
 </head>
-<body>
+<body class="login-locked">
 
 <!-- ONBOARDING SCREEN -->
 <div id="onboardingScreen">
@@ -1114,15 +1122,18 @@ function initOnboarding() {
   // Onboarding só aparece no app instalado (PWA), nunca no navegador
   if (!isStandalone) {
     document.getElementById('onboardingScreen').classList.add('hidden');
+    document.body.classList.add('login-locked'); // hide app content
     return true;
   }
   // Se já tem sessão Firebase ativa, pula onboarding
   if (auth.currentUser) {
     document.getElementById('onboardingScreen').classList.add('hidden');
+    document.body.classList.remove('login-locked');
     return true;
   }
   document.getElementById('onboardingScreen').classList.remove('hidden');
   document.getElementById('loginScreen').classList.add('hidden');
+  document.body.classList.add('login-locked'); // hide app behind onboarding
   onbSlideIdx = 0;
   updateOnbDots();
   updateOnbBtn();
@@ -1185,6 +1196,8 @@ function onbSkip() {
 function onbFinish() {
   document.getElementById('onboardingScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
+  // Keep login-locked during login (will be removed by unlockApp)
+  document.body.classList.add('login-locked');
   initLogin();
 }
 
@@ -1199,6 +1212,7 @@ function initLogin() {
     return;
   }
   // Mostra tela de login
+  document.body.classList.add('login-locked');
   document.getElementById('loginNameField').style.display = 'none';
   document.getElementById('loginPinSetup').style.display = 'none';
   document.getElementById('loginPinConfirm').style.display = 'none';
@@ -1435,6 +1449,7 @@ function handleGoogleResult(result) {
 }
 
 function unlockApp() {
+  document.body.classList.remove('login-locked');
   document.getElementById('loginScreen').classList.add('hidden');
   // Reset scroll to top after DOM settles
   requestAnimationFrame(() => {
