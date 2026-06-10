@@ -1335,13 +1335,8 @@ function handleLogin() {
     document.getElementById('loginBtn').textContent = 'Criando...';
     auth.createUserWithEmailAndPassword(window._signupEmail, window._signupPass)
       .then(function(userCred) {
-        // Save name
-        saveUserName(window._signupName).then(function() {
-          // Check for localStorage migration
-          migrateFromLocalStorage().then(function(migrated) {
-            loadAndUnlock();
-          });
-        });
+        // Save name — onAuthStateChanged will handle the rest (loadAndUnlock)
+        return saveUserName(window._signupName);
       })
       .catch(function(error) {
         document.getElementById('loginError').textContent = error.message;
@@ -1361,7 +1356,7 @@ function handleLogin() {
   document.getElementById('loginBtn').textContent = 'Entrando...';
   auth.signInWithEmailAndPassword(email, password)
     .then(function() {
-      loadAndUnlock();
+      // onAuthStateChanged will handle loadAndUnlock
     })
     .catch(function(error) {
       document.getElementById('loginError').textContent = error.message;
@@ -1370,11 +1365,16 @@ function handleLogin() {
 }
 
 async function loadAndUnlock() {
-  await loadUserData();
-  // Migrate localStorage data if present
-  if (localStorage.getItem('tirzApps') || localStorage.getItem('tirzWeights') || localStorage.getItem('tirzGoal')) {
-    await migrateFromLocalStorage();
+  try {
+    await loadUserData();
+    // Migrate localStorage data if present
+    if (localStorage.getItem('tirzApps') || localStorage.getItem('tirzWeights') || localStorage.getItem('tirzGoal')) {
+      await migrateFromLocalStorage();
+    }
+  } catch(e) {
+    console.error('loadAndUnlock error:', e);
   }
+  // Always unlock, even if Firestore load fails
   unlockApp();
 }
 
@@ -1421,10 +1421,11 @@ auth.getRedirectResult().then(function(result) {
 function handleGoogleResult(result) {
   const user = result.user;
   if (user.displayName && !_userNameCache) {
-    saveUserName(user.displayName).then(() => loadAndUnlock());
-  } else {
-    loadAndUnlock();
+    saveUserName(user.displayName).then(function() {
+      // onAuthStateChanged will handle loadAndUnlock
+    });
   }
+  // onAuthStateChanged will handle loadAndUnlock
 }
 
 function unlockApp() {
