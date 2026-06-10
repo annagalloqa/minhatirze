@@ -88,10 +88,13 @@
   .body-map-container svg { width: 100%; height: 100%; }
 
   /* Injection zones — clickable areas on the SVG */
-  .zone { cursor: pointer; transition: all 0.2s; }
-  .zone:hover .zone-fill { opacity: 0.5; }
+  .zone { cursor: pointer; transition: transform 0.15s ease; }
+  .zone:active { transform: scale(0.95); }
+  .zone:hover .zone-fill { opacity: 0.25 !important; }
   .zone.active .zone-fill { opacity: 1 !important; }
-  .zone-fill { opacity: 0; transition: opacity 0.2s; }
+  .zone-fill { opacity: 0; transition: opacity 0.2s ease; }
+  /* Borda tracejada mais visível no hover */
+  .zone:hover rect[fill="none"] { stroke-width: 2; opacity: 0.8 !important; }
 
   .body-map-label {
     margin-top: 0;
@@ -1016,19 +1019,41 @@ function changeWeight(d) {
 
 // ======= BODY MAP =======
 function selectZone(zoneId, label) {
-  // Clear all active
-  document.querySelectorAll('.zone').forEach(z => z.classList.remove('active'));
-  // Set selected
   const el = document.getElementById('zone-' + zoneId);
-  if (el) {
-    el.classList.add('active');
-    const fill = el.querySelector('.zone-fill');
-    if (fill) fill.style.opacity = '0.35';
+  if (!el) return;
+
+  // Se clicou na mesma zona já selecionada → deseleciona
+  if (el.classList.contains('active')) {
+    // Remove active e reseta opacidade inline
+    document.querySelectorAll('.zone').forEach(z => {
+      z.classList.remove('active');
+      const f = z.querySelector('.zone-fill');
+      if (f) f.style.opacity = '';
+    });
+    selectedZone = '';
+    const lbl = document.getElementById('bodyMapLabel');
+    lbl.textContent = 'Toque em uma área do corpo';
+    lbl.classList.add('empty');
+    return;
   }
+
+  // Limpa TODAS as zonas (classe + opacidade inline)
+  document.querySelectorAll('.zone').forEach(z => {
+    z.classList.remove('active');
+    const f = z.querySelector('.zone-fill');
+    if (f) f.style.opacity = '';
+  });
+
+  // Seleciona nova zona
+  el.classList.add('active');
   selectedZone = label;
   const lbl = document.getElementById('bodyMapLabel');
   lbl.textContent = '📍 ' + label;
   lbl.classList.remove('empty');
+
+  // Animação sutil de toque
+  el.style.transform = 'scale(1.08)';
+  setTimeout(() => { el.style.transform = ''; }, 150);
 }
 
 // ======= CHIPS =======
