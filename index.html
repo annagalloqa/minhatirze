@@ -446,20 +446,28 @@
     </div>
     <!-- SETUP: step 2 — create PIN -->
     <div class="login-field" id="loginPinSetup" style="display:none">
-      <label>Criar senha (4 dígitos)</label>
-      <input type="password" inputmode="numeric" maxlength="4" id="pinSetup" placeholder="••••">
+      <label>Criar senha (mínimo 6 caracteres)</label>
+      <input type="password" id="pinSetup" placeholder="Sua senha" maxlength="100"
+        style="letter-spacing:0;text-align:left">
     </div>
     <!-- SETUP: step 3 — confirm PIN -->
     <div class="login-field" id="loginPinConfirm" style="display:none">
       <label>Confirmar senha</label>
-      <input type="password" inputmode="numeric" maxlength="4" id="pinConfirm" placeholder="••••">
+      <input type="password" id="pinConfirm" placeholder="Confirme sua senha" maxlength="100"
+        style="letter-spacing:0;text-align:left">
     </div>
     <!-- RETURNING: enter PIN -->
     <div id="loginPinEnter" style="display:none">
       <div id="loginWelcomeName" style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);text-align:center;margin-bottom:18px"></div>
       <div class="login-field">
-        <label>Digite sua senha</label>
-        <input type="password" inputmode="numeric" maxlength="4" id="pinEnter" placeholder="••••" autofocus>
+        <label>Email</label>
+        <input type="email" id="pinEnter" placeholder="seu@email.com" autocomplete="email" inputmode="email" maxlength="100"
+          style="letter-spacing:0;text-align:left">
+      </div>
+      <div class="login-field">
+        <label>Senha</label>
+        <input type="password" id="pinEnterPass" placeholder="Sua senha" maxlength="100"
+          style="letter-spacing:0;text-align:left">
       </div>
     </div>
     <div class="login-error" id="loginError"></div>
@@ -1246,55 +1254,25 @@ function showLoginTab(mode) {
 
 function showLoginEmailPassword() {
   document.getElementById('loginPinEnter').style.display = 'block';
-  // Reuse the PIN fields as email + password fields
-  document.getElementById('pinEnter').placeholder = 'seu@email.com';
-  document.getElementById('pinEnter').type = 'email';
-  document.getElementById('pinEnter').style.letterSpacing = '0';
-  document.getElementById('pinEnter').style.textAlign = 'left';
-  document.getElementById('pinEnter').setAttribute('maxlength', '100');
   document.getElementById('pinEnter').value = '';
-  // Show the label and input
+  document.getElementById('pinEnterPass').value = '';
+  // Show both fields
+  document.getElementById('pinEnter').parentElement.style.display = 'block';
+  document.getElementById('pinEnterPass').parentElement.style.display = 'block';
   const label = document.querySelector('#loginPinEnter label');
   if (label) label.textContent = 'Email';
-  // Add password field after email
-  if (!document.getElementById('pinEnterPass')) {
-    const passField = document.createElement('div');
-    passField.className = 'login-field';
-    passField.innerHTML = '<label>Senha</label><input type="password" id="pinEnterPass" placeholder="Sua senha" style="letter-spacing:0;text-align:left" maxlength="100">';
-    passField.querySelector('input').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') handleLogin();
-    });
-    document.getElementById('pinEnter').parentElement.parentElement.insertBefore(passField,
-      document.getElementById('pinEnter').parentElement.nextSibling);
-  }
-  const passEl = document.getElementById('pinEnterPass');
-  if (passEl) { passEl.value = ''; passEl.parentElement.style.display = 'block'; }
   setTimeout(() => document.getElementById('pinEnter').focus(), 300);
 }
 
 function showLoginPasswordOnly() {
   document.getElementById('loginPinSetup').style.display = 'block';
-  document.getElementById('pinSetup').placeholder = 'Sua senha';
-  document.getElementById('pinSetup').type = 'password';
-  document.getElementById('pinSetup').style.letterSpacing = '0';
-  document.getElementById('pinSetup').style.textAlign = 'left';
-  document.getElementById('pinSetup').setAttribute('maxlength', '100');
   document.getElementById('pinSetup').value = '';
-  const label = document.querySelector('#loginPinSetup label');
-  if (label) label.textContent = 'Criar senha (mínimo 6 caracteres)';
   setTimeout(() => document.getElementById('pinSetup').focus(), 100);
 }
 
 function showLoginConfirmPassword() {
   document.getElementById('loginPinConfirm').style.display = 'block';
-  document.getElementById('pinConfirm').placeholder = 'Confirme sua senha';
-  document.getElementById('pinConfirm').type = 'password';
-  document.getElementById('pinConfirm').style.letterSpacing = '0';
-  document.getElementById('pinConfirm').style.textAlign = 'left';
-  document.getElementById('pinConfirm').setAttribute('maxlength', '100');
   document.getElementById('pinConfirm').value = '';
-  const label = document.querySelector('#loginPinConfirm label');
-  if (label) label.textContent = 'Confirmar senha';
   setTimeout(() => document.getElementById('pinConfirm').focus(), 100);
 }
 
