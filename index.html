@@ -1397,34 +1397,11 @@ function resetAll() {
 }
 
 function signInWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  document.getElementById('loginError').textContent = '';
-  document.getElementById('loginBtn').textContent = 'Conectando...';
-  
-  // Try popup first; fall back to redirect on mobile/PWA
-  auth.signInWithPopup(provider)
-    .then(function(result) {
-      handleGoogleResult(result);
-    })
-    .catch(function(error) {
-      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-        // Popup blocked — use redirect instead (better for mobile)
-        auth.signInWithRedirect(provider);
-      } else {
-        document.getElementById('loginError').textContent = error.message;
-        document.getElementById('loginBtn').textContent = 'Entrar';
-      }
-    });
+  var provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithRedirect(provider);
 }
 
-// Handle redirect result when user returns
-auth.getRedirectResult().then(function(result) {
-  if (result && result.user) handleGoogleResult(result);
-}).catch(function(error) {
-  if (error.code !== 'auth/no-current-user') {
-    document.getElementById('loginError').textContent = error.message;
-  }
-});
+// Handle redirect result when user returns — now in window.onload
 
 function handleGoogleResult(result) {
   const user = result.user;
@@ -1571,17 +1548,26 @@ window.onload = () => {
   localStorage.setItem('tirzAppVersion', APP_VERSION);
   checkInstallScreen();
 
-  // Wait for Firebase Auth to initialize, then route
-  let _authHandled = false;
-  auth.onAuthStateChanged(function(user) {
-    if (_authHandled) return;
-    _authHandled = true;
-    if (user) {
-      // User is signed in → load data and unlock
+  // Check redirect result FIRST (Google sign-in), then fall back to auth state
+  auth.getRedirectResult().then(function(result) {
+    if (result && result.user) {
+      handleGoogleResult(result);
+      return;
+    }
+    // No redirect — check if already signed in
+    if (auth.currentUser) {
       loadAndUnlock();
     } else {
-      // No session → show onboarding or login
-      const skip = initOnboarding();
+      var skip = initOnboarding();
+      if (skip) initLogin();
+    }
+  }).catch(function(e) {
+    if (e.code !== 'auth/no-current-user') console.error(e);
+    // Fallback: check auth state
+    if (auth.currentUser) {
+      loadAndUnlock();
+    } else {
+      var skip = initOnboarding();
       if (skip) initLogin();
     }
   });
