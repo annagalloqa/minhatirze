@@ -405,71 +405,90 @@
       <label>Onde você aplicou? <span style="font-weight:400;text-transform:none;letter-spacing:0">— toque no boneco</span></label>
       <div class="body-map-wrap">
         <div class="body-map-container">
-          <!-- SVG BODY with clickable zones -->
+          <!-- SVG BODY with clickable zones — realistic silhouette -->
           <svg viewBox="0 0 200 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- HEAD -->
-            <ellipse cx="100" cy="32" rx="22" ry="26" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
-            <!-- NECK -->
-            <rect x="91" y="54" width="18" height="14" rx="4" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
-            <!-- TORSO -->
-            <rect x="62" y="66" width="76" height="90" rx="12" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
-            <!-- LEFT ARM -->
-            <rect x="138" y="68" width="22" height="72" rx="11" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
-            <!-- RIGHT ARM -->
-            <rect x="40" y="68" width="22" height="72" rx="11" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
-            <!-- LEGS -->
-            <rect x="64" y="155" width="34" height="100" rx="12" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
-            <rect x="102" y="155" width="34" height="100" rx="12" fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <defs>
+              <filter id="bodyShadow"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.1"/></filter>
+            </defs>
+            <!-- HEAD + NECK + TORSO (single path for smooth curves) -->
+            <path d="M78,30 C78,14 122,14 122,30 C122,42 115,50 106,54 C106,58 106,64 100,66 C94,64 94,58 94,54 C85,50 78,42 78,30Z"
+              fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- NECK → TORSO (hourglass shape) -->
+            <path d="M92,66 L88,74 Q60,76 58,105 Q56,130 64,152 L136,152 Q144,130 142,105 Q140,76 112,74 L108,66Z"
+              fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- LEFT ARM (screen left = patient's right) -->
+            <path d="M62,74 Q36,72 32,100 Q28,128 34,150 Q38,160 42,150 Q36,130 42,100 Q48,80 62,78Z"
+              fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- RIGHT ARM (screen right = patient's left) -->
+            <path d="M138,74 Q164,72 168,100 Q172,128 166,150 Q162,160 158,150 Q164,130 158,100 Q152,80 138,78Z"
+              fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- LEFT LEG -->
+            <path d="M70,152 Q62,180 62,210 Q62,250 66,280 Q68,285 72,280 Q70,250 72,210 Q76,180 80,152Z"
+              fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
+            <!-- RIGHT LEG -->
+            <path d="M120,152 Q128,180 128,210 Q128,250 134,280 Q136,285 140,280 Q138,250 136,210 Q132,180 130,152Z"
+              fill="#E8DDD8" stroke="#C4A99A" stroke-width="1.5"/>
 
-            <!-- ===== CLICKABLE ZONES ===== -->
+            <!-- ===== CLICKABLE ZONES (8 zones) ===== -->
 
-            <!-- ABDOMEN LEFT (screen left = patient's right) -->
+            <!-- ABDOMEN LEFT -->
             <g class="zone" id="zone-abd-l" onclick="selectZone('abd-l','Abdômen esquerdo')">
-              <rect class="zone-fill" x="65" y="100" width="32" height="50" rx="6" fill="#C4717A"/>
-              <text x="81" y="118" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ABD</text>
-              <text x="81" y="128" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ESQ</text>
-              <!-- dashed border always visible -->
-              <rect x="65" y="100" width="32" height="50" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+              <rect class="zone-fill" x="65" y="92" width="30" height="55" rx="7" fill="#C4717A"/>
+              <text x="80" y="112" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ABD</text>
+              <text x="80" y="123" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ESQ</text>
+              <rect x="65" y="92" width="30" height="55" rx="7" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
             </g>
-
-            <!-- ABDOMEN RIGHT (screen right = patient's left) -->
+            <!-- ABDOMEN RIGHT -->
             <g class="zone" id="zone-abd-r" onclick="selectZone('abd-r','Abdômen direito')">
-              <rect class="zone-fill" x="103" y="100" width="32" height="50" rx="6" fill="#C4717A"/>
-              <text x="119" y="118" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ABD</text>
-              <text x="119" y="128" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">DIR</text>
-              <rect x="103" y="100" width="32" height="50" rx="6" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+              <rect class="zone-fill" x="105" y="92" width="30" height="55" rx="7" fill="#C4717A"/>
+              <text x="120" y="112" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ABD</text>
+              <text x="120" y="123" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="105" y="92" width="30" height="55" rx="7" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
             </g>
 
-            <!-- THIGH LEFT (screen left) -->
+            <!-- FLANCO LEFT (love handle) -->
+            <g class="zone" id="zone-flanco-l" onclick="selectZone('flanco-l','Flanco esquerdo')">
+              <rect class="zone-fill" x="56" y="100" width="12" height="45" rx="5" fill="#B8A0C4"/>
+              <text x="62" y="116" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#B8A0C4" font-weight="600">FLAN</text>
+              <text x="62" y="126" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#B8A0C4" font-weight="600">ESQ</text>
+              <rect x="56" y="100" width="12" height="45" rx="5" fill="none" stroke="#B8A0C4" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+            <!-- FLANCO RIGHT -->
+            <g class="zone" id="zone-flanco-r" onclick="selectZone('flanco-r','Flanco direito')">
+              <rect class="zone-fill" x="132" y="100" width="12" height="45" rx="5" fill="#B8A0C4"/>
+              <text x="138" y="116" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#B8A0C4" font-weight="600">FLAN</text>
+              <text x="138" y="126" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#B8A0C4" font-weight="600">DIR</text>
+              <rect x="132" y="100" width="12" height="45" rx="5" fill="none" stroke="#B8A0C4" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+            </g>
+
+            <!-- THIGH LEFT -->
             <g class="zone" id="zone-coxa-l" onclick="selectZone('coxa-l','Coxa esquerda')">
-              <rect class="zone-fill" x="65" y="165" width="30" height="55" rx="8" fill="#C4717A"/>
-              <text x="80" y="188" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">COXA</text>
-              <text x="80" y="198" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ESQ</text>
-              <rect x="65" y="165" width="30" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+              <rect class="zone-fill" x="64" y="160" width="26" height="55" rx="8" fill="#C4717A"/>
+              <text x="77" y="185" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">COXA</text>
+              <text x="77" y="196" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">ESQ</text>
+              <rect x="64" y="160" width="26" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
             </g>
-
-            <!-- THIGH RIGHT (screen right) -->
+            <!-- THIGH RIGHT -->
             <g class="zone" id="zone-coxa-r" onclick="selectZone('coxa-r','Coxa direita')">
-              <rect class="zone-fill" x="105" y="165" width="30" height="55" rx="8" fill="#C4717A"/>
-              <text x="120" y="188" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">COXA</text>
-              <text x="120" y="198" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">DIR</text>
-              <rect x="105" y="165" width="30" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+              <rect class="zone-fill" x="110" y="160" width="26" height="55" rx="8" fill="#C4717A"/>
+              <text x="123" y="185" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">COXA</text>
+              <text x="123" y="196" text-anchor="middle" font-family="DM Sans" font-size="7" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="110" y="160" width="26" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
             </g>
 
             <!-- ARM LEFT (screen left = patient's right) -->
             <g class="zone" id="zone-braco-l" onclick="selectZone('braco-l','Braço esquerdo')">
-              <rect class="zone-fill" x="40" y="75" width="22" height="55" rx="8" fill="#C4717A"/>
-              <text x="51" y="96" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">BRÇ</text>
-              <text x="51" y="106" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">ESQ</text>
-              <rect x="40" y="75" width="22" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+              <rect class="zone-fill" x="30" y="80" width="16" height="55" rx="7" fill="#C4717A"/>
+              <text x="38" y="102" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">BRÇ</text>
+              <text x="38" y="113" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">ESQ</text>
+              <rect x="30" y="80" width="16" height="55" rx="7" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
             </g>
-
             <!-- ARM RIGHT (screen right = patient's left) -->
             <g class="zone" id="zone-braco-r" onclick="selectZone('braco-r','Braço direito')">
-              <rect class="zone-fill" x="138" y="75" width="22" height="55" rx="8" fill="#C4717A"/>
-              <text x="149" y="96" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">BRÇ</text>
-              <text x="149" y="106" text-anchor="middle" font-family="DM Sans" font-size="6.5" fill="#C4717A" font-weight="600">DIR</text>
-              <rect x="138" y="75" width="22" height="55" rx="8" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
+              <rect class="zone-fill" x="154" y="80" width="16" height="55" rx="7" fill="#C4717A"/>
+              <text x="162" y="102" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">BRÇ</text>
+              <text x="162" y="113" text-anchor="middle" font-family="DM Sans" font-size="6" fill="#C4717A" font-weight="600">DIR</text>
+              <rect x="154" y="80" width="16" height="55" rx="7" fill="none" stroke="#C4717A" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
             </g>
 
           </svg>
@@ -898,7 +917,22 @@ function getGoal() { return JSON.parse(localStorage.getItem('tirzGoal') || 'null
 function saveGoalData(g) { localStorage.setItem('tirzGoal', JSON.stringify(g)); }
 
 // ======= INIT =======
-window.onload = () => { initLogin(); };
+window.onload = () => {
+  // Force reload if cached version is outdated (PWA cache-bust)
+  const APP_VERSION = '10';
+  const cachedVer = localStorage.getItem('tirzAppVersion');
+  if (cachedVer && cachedVer !== APP_VERSION) {
+    // Nova versão — recarrega sem cache
+    localStorage.setItem('tirzAppVersion', APP_VERSION);
+    if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+      // PWA: força reload limpo
+      window.location.reload(true);
+      return;
+    }
+  }
+  localStorage.setItem('tirzAppVersion', APP_VERSION);
+  initLogin();
+};
 
 function initApp() {
   const apps = getApps();
@@ -1536,6 +1570,93 @@ function deleteWeight(date) {
   showToast('🗑 Peso removido');
 }
 
+// ======= ROTATION =======
+function renderRotation() {
+  const el = document.getElementById('rotationSummary');
+  if (!el) return;
+  const apps = getApps();
+  if (apps.length < 2) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:20px 0;line-height:1.6;">Registre pelo menos 2 aplicações para ver o rodízio 🗺</p>';
+    return;
+  }
+
+  // Últimas 8 aplicações (mais recentes primeiro)
+  const recent = [...apps].sort((a,b) => b.datetime.localeCompare(a.datetime)).slice(0, 8);
+
+  // Agrupa por tipo de zona
+  const zones = ['abdômen', 'coxa', 'braço', 'flanco'];
+  const zoneColor = { 'abdômen': '#C4717A', 'coxa': '#7A9E8E', 'braço': '#C9A96E', 'flanco': '#B8A0C4' };
+  const counts = {};
+  zones.forEach(z => { counts[z] = { count: 0, lastUsed: null }; });
+
+  recent.forEach(app => {
+    if (!app.site) return;
+    const site = app.site.toLowerCase();
+    for (const z of zones) {
+      if (site.includes(z)) {
+        counts[z].count++;
+        if (!counts[z].lastUsed || app.datetime > counts[z].lastUsed) {
+          counts[z].lastUsed = app.datetime;
+        }
+        break;
+      }
+    }
+  });
+
+  // Última e penúltima
+  const last = recent[0];
+  const prev = recent.length > 1 ? recent[1] : null;
+  const fmtDate = d => {
+    const dt = new Date(d + (d.length === 10 ? 'T12:00:00' : ''));
+    return dt.toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+  };
+
+  // Sugestão: zona menos usada recentemente
+  let suggestion = null;
+  let minCount = Infinity;
+  let oldestDate = null;
+  zones.forEach(z => {
+    if (counts[z].count < minCount || (counts[z].count === minCount && (!oldestDate || (counts[z].lastUsed && counts[z].lastUsed < oldestDate)))) {
+      minCount = counts[z].count;
+      oldestDate = counts[z].lastUsed;
+      suggestion = z;
+    }
+  });
+
+  // Dias desde último uso da zona sugerida
+  const daysSince = suggestion && counts[suggestion].lastUsed
+    ? Math.floor((Date.now() - new Date(counts[suggestion].lastUsed + 'T12:00:00')) / 86400000)
+    : 0;
+
+  // Barras de distribuição
+  const maxCount = Math.max(1, ...zones.map(z => counts[z].count));
+  const bars = zones.map(z => {
+    const pct = Math.round((counts[z].count / maxCount) * 100);
+    const barW = Math.max(2, Math.round(pct * 0.6));
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span style="font-size:11px;color:var(--text-soft);width:52px;text-align:right;">${z}</span>
+      <div style="flex:1;height:14px;background:var(--rose-pale);border-radius:7px;overflow:hidden;">
+        <div style="height:100%;width:${barW}%;background:${zoneColor[z]};border-radius:7px;transition:width 0.5s ease;"></div>
+      </div>
+      <span style="font-size:11px;font-weight:600;color:${zoneColor[z]};width:24px;">${counts[z].count}x</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="font-size:13px;color:var(--text-soft);margin-bottom:12px;display:flex;flex-direction:column;gap:4px;">
+      <div>📍 <strong>Última:</strong> ${last.site || '—'} <span style="color:var(--text-soft);font-size:11px;">(${fmtDate(last.datetime)})</span></div>
+      ${prev ? `<div>🕐 <strong>Anterior:</strong> ${prev.site || '—'} <span style="color:var(--text-soft);font-size:11px;">(${fmtDate(prev.datetime)})</span></div>` : ''}
+    </div>
+    <div style="background:${zoneColor[suggestion]}15;border:1px solid ${zoneColor[suggestion]}40;border-radius:12px;padding:12px 14px;margin-bottom:14px;text-align:center;">
+      <div style="font-size:11px;color:var(--text-soft);margin-bottom:4px;">💡 Sugestão para próxima dose</div>
+      <div style="font-size:16px;font-weight:700;color:${zoneColor[suggestion]};text-transform:capitalize;">${suggestion}</div>
+      <div style="font-size:11px;color:var(--text-soft);">${daysSince > 0 ? 'não usado há ' + daysSince + ' dias' : 'pouco usado recentemente'}</div>
+    </div>
+    <div style="font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Distribuição (últimas ${recent.length})</div>
+    ${bars}
+  `;
+}
+
 // ======= SUMMARY =======
 function updateSummary() {
   try {
@@ -1601,24 +1722,8 @@ function updateSummary() {
       }
     }
 
-    // Rotation summary
-    const rotEl = document.getElementById('rotationSummary');
-    if (rotEl) {
-      const siteCounts = {};
-      apps.forEach(a => { if(a.site) siteCounts[a.site] = (siteCounts[a.site]||0)+1; });
-      if (Object.keys(siteCounts).length === 0) {
-        rotEl.innerHTML = '<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:10px 0">Nenhum local registrado ainda</p>';
-      } else {
-        const total = apps.filter(a=>a.site).length;
-        rotEl.innerHTML = Object.entries(siteCounts).sort((a,b)=>b[1]-a[1]).map(([site,count])=>`
-          <div style="margin-bottom:10px">
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-              <span>${site}</span><span style="font-weight:600;color:var(--rose)">${count}x</span>
-            </div>
-            <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(count/total*100)}%"></div></div>
-          </div>`).join('');
-      }
-    }
+    // Rotation summary — versão inteligente com sugestão
+    renderRotation();
   } catch(e) { console.error('updateSummary:', e); }
 }
 
