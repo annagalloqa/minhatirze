@@ -1064,6 +1064,12 @@ function checkInstallScreen() {
     return;
   }
   if (isStandalone) return;
+  // Se voltou de redirect OAuth, não mostra instalação
+  if (sessionStorage.getItem('fb_redirect') === '1') {
+    sessionStorage.removeItem('fb_redirect');
+    document.getElementById('installScreen').classList.add('hidden');
+    return;
+  }
   const screen = document.getElementById('installScreen');
   screen.classList.remove('hidden');
   if (isIOS) {
@@ -1398,6 +1404,7 @@ function resetAll() {
 
 function signInWithGoogle() {
   var provider = new firebase.auth.GoogleAuthProvider();
+  sessionStorage.setItem('fb_redirect', '1');
   auth.signInWithRedirect(provider);
 }
 
