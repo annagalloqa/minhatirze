@@ -1129,18 +1129,18 @@ function initOnboarding() {
   // Onboarding só aparece no app instalado (PWA), nunca no navegador
   if (!isStandalone) {
     document.getElementById('onboardingScreen').classList.add('hidden');
-    document.body.classList.add('login-locked'); // hide app content
+    document.body.classList.add('login-locked');
     return true;
   }
-  // Se já tem sessão Firebase ativa, pula onboarding
-  if (auth.currentUser) {
+  // Se já tem dados no app, pula onboarding (usuário real)
+  if (_appsCache.length > 0 || _weightsCache.length > 0 || _goalCache) {
     document.getElementById('onboardingScreen').classList.add('hidden');
     document.body.classList.remove('login-locked');
     return true;
   }
   document.getElementById('onboardingScreen').classList.remove('hidden');
   document.getElementById('loginScreen').classList.add('hidden');
-  document.body.classList.add('login-locked'); // hide app behind onboarding
+  document.body.classList.add('login-locked');
   onbSlideIdx = 0;
   updateOnbDots();
   updateOnbBtn();
@@ -1560,8 +1560,21 @@ window.onload = () => {
   // Wait for Firebase Auth to initialize, then route
   auth.onAuthStateChanged(function(user) {
     if (user) {
-      // User is signed in → load data and unlock
-      loadAndUnlock();
+      // User is signed in → load data, then decide: show onboarding or unlock
+      loadUserData().then(function() {
+        // Se não tem dados ainda → onboarding (primeira vez de verdade)
+        if (!_appsCache.length && !_weightsCache.length && !_goalCache) {
+          document.body.classList.add('login-locked');
+          const showOnb = initOnboarding();
+          if (!showOnb) return; // onboarding mostrado
+        }
+        // Check for localStorage migration
+        if (localStorage.getItem('tirzApps') || localStorage.getItem('tirzWeights')) {
+          migrateFromLocalStorage().then(function() { unlockApp(); });
+        } else {
+          unlockApp();
+        }
+      });
     } else {
       // No session → show onboarding or login
       const skip = initOnboarding();
