@@ -124,14 +124,14 @@
   .swipe-container { position: relative; overflow: hidden; }
   .swipe-bg { position: absolute; right: 0; top: 0; bottom: 0;
     display: flex; align-items: center; justify-content: center;
-    background: #e74c3c; color: white; font-size: 13px; font-weight: 600;
-    padding: 0 20px; border-radius: 0 12px 12px 0;
-    transition: opacity 0.2s; opacity: 0; }
+    background: #e74c3c; color: white; font-size: 22px; font-weight: 600;
+    width: 80px; border-radius: 0 12px 12px 0; cursor: pointer;
+    transition: opacity 0.2s; opacity: 0; user-select: none; }
   .swipe-item { position: relative; z-index: 1; background: var(--warm-white);
     transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     touch-action: pan-y; }
-  .swipe-item.swiped { transform: translateX(-80px); border-radius: 12px 0 0 12px; }
-  .swipe-item.swiped + .swipe-bg { opacity: 1; }
+  .swipe-item.open { transform: translateX(-80px); border-radius: 12px 0 0 12px; }
+  .swipe-item.open + .swipe-bg { opacity: 1; }
 
   /* WEIGHT GOAL */
   .goal-row { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -1378,7 +1378,7 @@ function renderSymptomHistory() {
           </div>
         </div>
       </div>
-      <div class="swipe-bg">🗑 Apagar</div>
+      <div class="swipe-bg">🗑</div>
     </div>`;
   }).join('');
   enableSwipeDelete('#symptomHistoryList', (date) => deleteSymptom(date));
@@ -1625,7 +1625,7 @@ function renderHistory() {
           </div>
         </div>
       </div>
-      <div class="swipe-bg">🗑 Apagar</div>
+      <div class="swipe-bg">🗑</div>
     </div>`;
   }).join('');
   enableSwipeDelete('#historyList', (id) => deleteApp(Number(id)));
@@ -1782,7 +1782,7 @@ function renderWeightHistory() {
           <strong>${w.kg.toFixed(1)} kg</strong>
         </div>
       </div>
-      <div class="swipe-bg" style="border-radius:0 8px 8px 0">🗑 Apagar</div>
+      <div class="swipe-bg" style="border-radius:0 8px 8px 0">🗑</div>
     </div>`;
   }).join('');
   enableSwipeDelete('#weightHistory', (date) => deleteWeight(date));
@@ -2166,15 +2166,18 @@ function generateShareCard() {
   document.getElementById('shareModalImg').src = shareImageDataUrl;
   document.getElementById('shareModal').classList.add('show');
 
-  // Mostrar/ocultar botão de share nativo
+  // Mostrar/ocultar botão de share nativo (funciona no iPhone e Android Chrome)
   const nativeBtn = document.getElementById('shareNativeBtn');
-  if (navigator.share && navigator.canShare) {
+  const canShare = navigator.share && navigator.canShare;
+  if (canShare) {
+    // Testa se consegue compartilhar arquivo (Android Brave pode falhar)
     nativeBtn.style.display = 'inline-block';
+    nativeBtn.textContent = isIOS ? '📤 Compartilhar' : '📤 Compartilhar';
   } else {
     nativeBtn.style.display = 'none';
   }
 
-  showToast('📸 Cartão gerado!');
+  showToast('📸 Toque em Compartilhar ou Salvar');
 }
 
 function closeShareModal() {
@@ -2184,16 +2187,24 @@ function closeShareModal() {
 async function shareNative() {
   if (!shareImageDataUrl) return;
   try {
-    // Converter data URL para blob
+    // Tentar compartilhar como arquivo (iPhone e Android Chrome)
     const resp = await fetch(shareImageDataUrl);
     const blob = await resp.blob();
     const file = new File([blob], 'minha-tirze-progresso.png', {type: 'image/png'});
+    if (navigator.canShare && navigator.canShare({files: [file]})) {
+      await navigator.share({ files: [file], title: 'Minha Tirze - Meu Progresso' });
+      return;
+    }
+  } catch(e) { /* fallback abaixo */ }
+
+  // Fallback: compartilhar como URL (funciona em mais navegadores)
+  try {
     await navigator.share({
-      files: [file],
       title: 'Minha Tirze - Meu Progresso',
+      text: 'Acompanhe meu progresso com tirzepatida!'
     });
   } catch(e) {
-    // Usuário cancelou ou não suporta — fallback: salvar
+    // Fallback final: salvar
     saveShareImage();
   }
 }
@@ -2206,7 +2217,12 @@ function saveShareImage() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToast('💾 Imagem salva!');
+  // Android pode abrir em vez de baixar — avisa
+  if (isAndroid) {
+    showToast('💾 Se a imagem abriu, toque e segure para salvar');
+  } else {
+    showToast('💾 Imagem salva!');
+  }
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -2316,11 +2332,13 @@ function enableSwipeDelete(containerSelector, onDelete) {
   const container = document.querySelector(containerSelector);
   if (!container) return;
   container.addEventListener('touchstart', function(e) {
+    // Fecha qualquer swipe aberto antes de começar novo
+    closeAllSwipes(container);
     const item = e.target.closest('.swipe-item');
-    if (!item) { resetAllSwipes(container); return; }
+    if (!item) return;
     item._startX = e.touches[0].clientX;
     item._startY = e.touches[0].clientY;
-    item._swiped = false;
+    item._moved = false;
   }, {passive:true});
   container.addEventListener('touchmove', function(e) {
     const item = e.target.closest('.swipe-item');
@@ -2328,41 +2346,57 @@ function enableSwipeDelete(containerSelector, onDelete) {
     const dx = e.touches[0].clientX - item._startX;
     const dy = e.touches[0].clientY - item._startY;
     if (Math.abs(dy) > Math.abs(dx)) return; // scroll vertical
-    if (dx < -20) {
+    if (dx < -10) {
       e.preventDefault();
-      item._swiped = true;
-      item.style.transform = 'translateX(-80px)';
+      item._moved = true;
+      const tx = Math.max(-80, dx);
+      item.style.transform = 'translateX(' + tx + 'px)';
       item.style.borderRadius = '12px 0 0 12px';
     }
   }, {passive:false});
   container.addEventListener('touchend', function(e) {
     const item = e.target.closest('.swipe-item');
     if (!item) return;
-    if (item._swiped && item._startX - e.changedTouches[0].clientX > 40) {
-      // Delete!
-      const id = item.dataset.deleteId;
-      if (id) onDelete(id);
+    if (item._moved && item._startX - e.changedTouches[0].clientX > 40) {
+      // Abriu: mantém travado
+      item.classList.add('open');
+      item.style.transform = 'translateX(-80px)';
     } else {
-      // Reset
+      // Fecha
       item.style.transform = '';
       item.style.borderRadius = '';
+      item.classList.remove('open');
     }
-    delete item._startX; delete item._startY; delete item._swiped;
+    delete item._startX; delete item._startY; delete item._moved;
   });
-  // Click fallback no bg vermelho
+  // Click no botão vermelho/lixeira → deleta
   container.addEventListener('click', function(e) {
     const bg = e.target.closest('.swipe-bg');
     if (bg) {
+      e.preventDefault();
+      e.stopPropagation();
       const item = bg.parentElement.querySelector('.swipe-item');
-      if (item && item.dataset.deleteId) onDelete(item.dataset.deleteId);
+      if (item && item.dataset.deleteId) {
+        onDelete(item.dataset.deleteId);
+      }
+    }
+  });
+  // Click fora → fecha swipes abertos
+  document.addEventListener('click', function(e) {
+    if (!container.contains(e.target)) {
+      closeAllSwipes(container);
     }
   });
 }
-function resetAllSwipes(container) {
+function closeAllSwipes(container) {
   container.querySelectorAll('.swipe-item').forEach(item => {
     item.style.transform = ''; item.style.borderRadius = '';
-    delete item._startX; delete item._startY; delete item._swiped;
+    item.classList.remove('open');
+    delete item._startX; delete item._startY; delete item._moved;
   });
+}
+function resetAllSwipes(container) {
+  closeAllSwipes(container);
 }
 
 window.addEventListener('resize',()=>{ if(document.getElementById('page-peso').classList.contains('active')) drawWeightChart(); });
