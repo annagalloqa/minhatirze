@@ -217,6 +217,22 @@
   .ach-name.locked { color: var(--text-soft); font-weight: 400; }
   .ach-desc { font-size: 11px; color: var(--text-soft); }
 
+  /* SHARE MODAL */
+  #shareModal { position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    z-index: 10002; display: none; flex-direction: column; align-items: center;
+    justify-content: center; padding: 20px;
+    animation: fadeIn 0.25s ease; }
+  #shareModal.show { display: flex; }
+  #shareModal img { max-width: 90vw; max-height: 65vh; border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4); }
+  .share-actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+  .share-btn { padding: 12px 24px; border-radius: 12px; font-size: 15px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; border: none; cursor: pointer; transition: all 0.2s; }
+  .share-btn.close { background: rgba(255,255,255,0.15); color: white; }
+  .share-btn.native { background: var(--rose); color: white; }
+  .share-btn.save { background: var(--sage); color: white; }
+  .share-btn:active { transform: scale(0.96); }
+
   /* ===== LOGIN SCREEN ===== */
   /* INSTALL SCREEN */
   #installScreen {
@@ -836,6 +852,16 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- SHARE MODAL -->
+<div id="shareModal" onclick="if(event.target===this)closeShareModal()">
+  <img id="shareModalImg" src="" alt="Progresso">
+  <div class="share-actions">
+    <button class="share-btn native" id="shareNativeBtn" onclick="shareNative()">📤 Compartilhar</button>
+    <button class="share-btn save" onclick="saveShareImage()">💾 Salvar</button>
+    <button class="share-btn close" onclick="closeShareModal()">✕ Fechar</button>
+  </div>
+</div>
+
 <script>
 // ======= PLATFORM & INSTALL =======
 const isAndroid = /Android/i.test(navigator.userAgent);
@@ -911,10 +937,11 @@ let onbSlideIdx = 0;
 const ONB_TOTAL = 3;
 
 function initOnboarding() {
-  const done = localStorage.getItem('tirzOnboardingDone');
-  if (done) {
+  // Se já tem PIN configurado, a pessoa já usou o app — pula onboarding
+  const hasPin = localStorage.getItem(STORED_PIN_KEY);
+  if (hasPin) {
     document.getElementById('onboardingScreen').classList.add('hidden');
-    return true; // já fez, pode seguir
+    return true;
   }
   document.getElementById('onboardingScreen').classList.remove('hidden');
   document.getElementById('loginScreen').classList.add('hidden');
@@ -978,7 +1005,6 @@ function onbSkip() {
 }
 
 function onbFinish() {
-  localStorage.setItem('tirzOnboardingDone', '1');
   document.getElementById('onboardingScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   initLogin();
@@ -2016,6 +2042,8 @@ function clearData() {
 }
 
 // ======= SHARE CARD =======
+let shareImageDataUrl = '';
+
 function generateShareCard() {
   const apps = getApps();
   const weights = getWeights();
@@ -2102,7 +2130,7 @@ function generateShareCard() {
     ctx.font = '14px "DM Sans", sans-serif';
     ctx.fillStyle = '#7A6568';
     ctx.textAlign = 'center';
-    ctx.fillText(`Meta: ${goal.start.toFixed(0)} → ${goal.target.toFixed(0)} kg · ${Math.max(0,pct)}% concluído`, W/2, yMeta);
+    ctx.fillText('Meta: ' + goal.start.toFixed(0) + ' → ' + goal.target.toFixed(0) + ' kg · ' + Math.max(0,pct) + '% concluído', W/2, yMeta);
 
     // Barra de progresso
     const barX = 80, barW = 440, barH = 8;
@@ -2133,19 +2161,52 @@ function generateShareCard() {
   ctx.fillStyle = '#b0888c';
   ctx.fillText('app.minhatirze.app · seus dados, só seus', W/2, H - 30);
 
-  // Mostrar preview
-  const img = document.createElement('img');
-  img.src = canvas.toDataURL('image/png');
-  img.style.cssText = 'width:100%;max-width:300px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);margin-top:8px';
-  img.onclick = function() {
-    // Abre em nova aba para salvar
-    const w = window.open('');
-    w.document.write('<img src="' + img.src + '" style="max-width:100%"><p style="text-align:center;font-family:sans-serif;color:#666">Toque e segure para salvar</p>');
-  };
-  const preview = document.getElementById('sharePreview');
-  preview.innerHTML = '<p style="font-size:12px;color:var(--sage);margin-bottom:6px;">✅ Toque na imagem para abrir e salvar</p>';
-  preview.appendChild(img);
+  // Salvar data URL e abrir modal
+  shareImageDataUrl = canvas.toDataURL('image/png');
+  document.getElementById('shareModalImg').src = shareImageDataUrl;
+  document.getElementById('shareModal').classList.add('show');
+
+  // Mostrar/ocultar botão de share nativo
+  const nativeBtn = document.getElementById('shareNativeBtn');
+  if (navigator.share && navigator.canShare) {
+    nativeBtn.style.display = 'inline-block';
+  } else {
+    nativeBtn.style.display = 'none';
+  }
+
   showToast('📸 Cartão gerado!');
+}
+
+function closeShareModal() {
+  document.getElementById('shareModal').classList.remove('show');
+}
+
+async function shareNative() {
+  if (!shareImageDataUrl) return;
+  try {
+    // Converter data URL para blob
+    const resp = await fetch(shareImageDataUrl);
+    const blob = await resp.blob();
+    const file = new File([blob], 'minha-tirze-progresso.png', {type: 'image/png'});
+    await navigator.share({
+      files: [file],
+      title: 'Minha Tirze - Meu Progresso',
+    });
+  } catch(e) {
+    // Usuário cancelou ou não suporta — fallback: salvar
+    saveShareImage();
+  }
+}
+
+function saveShareImage() {
+  if (!shareImageDataUrl) return;
+  const a = document.createElement('a');
+  a.href = shareImageDataUrl;
+  a.download = 'minha-tirze-progresso.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('💾 Imagem salva!');
 }
 
 function roundRect(ctx, x, y, w, h, r) {
