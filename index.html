@@ -120,6 +120,19 @@
   .symptom-tag { font-size: 11px; padding: 2px 8px; background: var(--rose-pale); color: var(--rose); border-radius: 10px; font-weight: 500; }
   .delete-btn { background: none; border: none; color: var(--rose-light); font-size: 18px; cursor: pointer; padding: 4px; line-height: 1; }
 
+  /* SWIPE-TO-DELETE */
+  .swipe-container { position: relative; overflow: hidden; }
+  .swipe-bg { position: absolute; right: 0; top: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #e74c3c; color: white; font-size: 13px; font-weight: 600;
+    padding: 0 20px; border-radius: 0 12px 12px 0;
+    transition: opacity 0.2s; opacity: 0; }
+  .swipe-item { position: relative; z-index: 1; background: var(--warm-white);
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    touch-action: pan-y; }
+  .swipe-item.swiped { transform: translateX(-80px); border-radius: 12px 0 0 12px; }
+  .swipe-item.swiped + .swipe-bg { opacity: 1; }
+
   /* WEIGHT GOAL */
   .goal-row { display: flex; gap: 8px; margin-bottom: 14px; }
   .goal-box { flex: 1; border-radius: 12px; padding: 12px; text-align: center; border: 1px solid var(--border); }
@@ -179,6 +192,31 @@
 
   input[type="datetime-local"], input[type="date"] { color-scheme: light; }
 
+  /* IMC / PROTEÍNA */
+  .imc-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .imc-box { flex: 1; text-align: center; padding: 14px 8px; border-radius: 14px; }
+  .imc-box.imc { background: var(--rose-pale); border: 1px solid var(--rose-light); }
+  .imc-box.protein { background: #e8f4ef; border: 1px solid #a8d4bc; }
+  .imc-num { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); line-height: 1; }
+  .imc-label { font-size: 10px; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+  .imc-faixa { font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .imc-faixa.normal { color: var(--sage); }
+  .imc-faixa.atencao { color: #c9a43e; }
+  .imc-faixa.alerta { color: #c47; }
+  .protein-range { font-size: 13px; color: var(--sage); line-height: 1.5; margin-top: 8px; text-align: center; }
+  .protein-range strong { font-family: 'DM Serif Display', serif; font-size: 18px; }
+
+  /* ACHIEVEMENTS */
+  .ach-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .ach-item:last-child { border-bottom: none; }
+  .ach-icon { font-size: 28px; width: 40px; text-align: center; flex-shrink: 0; opacity: 0.35; transition: all 0.3s; }
+  .ach-icon.unlocked { opacity: 1; animation: achPop 0.5s ease; }
+  @keyframes achPop { 0%{transform:scale(0.5)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+  .ach-info { flex: 1; min-width: 0; }
+  .ach-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .ach-name.locked { color: var(--text-soft); font-weight: 400; }
+  .ach-desc { font-size: 11px; color: var(--text-soft); }
+
   /* ===== LOGIN SCREEN ===== */
   /* INSTALL SCREEN */
   #installScreen {
@@ -231,9 +269,76 @@
   .login-error { color: var(--rose); font-size: 13px; text-align: center; margin-bottom: 10px; min-height: 18px; }
   .login-hint { font-size: 12px; color: var(--text-soft); text-align: center; margin-top: 16px; line-height: 1.5; }
   .login-hint a { color: var(--rose); text-decoration: none; }
+
+  /* ===== ONBOARDING ===== */
+  #onboardingScreen {
+    position: fixed; inset: 0; background: var(--cream);
+    display: flex; flex-direction: column;
+    z-index: 10001; overflow: hidden;
+    padding: calc(env(safe-area-inset-top,0px) + 20px) 0 calc(env(safe-area-inset-bottom,0px) + 20px);
+  }
+  #onboardingScreen.hidden { display: none; }
+  .onb-slides { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .onb-slides::-webkit-scrollbar { display: none; }
+  .onb-slide { flex: 0 0 100%; scroll-snap-align: center;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 32px 28px; text-align: center; }
+  .onb-emoji { font-size: 80px; margin-bottom: 28px; animation: onbBounce 1.2s ease infinite; }
+  .onb-slide:nth-child(2) .onb-emoji { animation-delay: 0.2s; }
+  .onb-slide:nth-child(3) .onb-emoji { animation-delay: 0.4s; }
+  @keyframes onbBounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .onb-title { font-family: 'DM Serif Display', serif; font-size: 26px;
+    color: var(--text); margin-bottom: 12px; line-height: 1.2; }
+  .onb-desc { font-size: 15px; color: var(--text-soft); line-height: 1.7; max-width: 300px; }
+  .onb-dots { display: flex; justify-content: center; gap: 10px; padding: 16px 0 24px; }
+  .onb-dot { width: 10px; height: 10px; border-radius: 50%;
+    background: var(--rose-light); transition: all 0.3s; }
+  .onb-dot.active { background: var(--rose); width: 28px; border-radius: 5px; }
+  .onb-footer { padding: 0 28px calc(env(safe-area-inset-bottom,0px) + 8px); }
+  .onb-btn { width: 100%; padding: 16px; background: var(--rose); color: white;
+    border: none; border-radius: 14px; font-size: 16px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+  .onb-btn:active { background: #a85a63; transform: scale(0.98); }
+  .onb-skip { display: block; text-align: center; margin-top: 12px;
+    font-size: 13px; color: var(--text-soft); cursor: pointer;
+    background: none; border: none; font-family: 'DM Sans', sans-serif; width: 100%; }
 </style>
 </head>
 <body>
+
+<!-- ONBOARDING SCREEN -->
+<div id="onboardingScreen">
+  <div class="onb-slides" id="onbSlides">
+    <div class="onb-slide">
+      <div class="onb-emoji">💉</div>
+      <div class="onb-title">Registre cada<br>aplicação</div>
+      <p class="onb-desc">Data, dose e local no corpo. Tudo organizado pra você não perder nenhum detalhe do seu tratamento.</p>
+    </div>
+    <div class="onb-slide">
+      <div class="onb-emoji">⚖️</div>
+      <div class="onb-title">Acompanhe<br>seu peso</div>
+      <p class="onb-desc">Gráfico de evolução, meta pessoal e progresso visual. Veja cada conquista da sua jornada.</p>
+    </div>
+    <div class="onb-slide">
+      <div class="onb-emoji">🔒</div>
+      <div class="onb-title">Seus dados<br>protegidos</div>
+      <p class="onb-desc">Tudo fica salvo só no seu celular. Crie uma senha de 4 dígitos e seus dados ficam seguros.</p>
+    </div>
+  </div>
+  <div class="onb-dots" id="onbDots">
+    <div class="onb-dot active"></div>
+    <div class="onb-dot"></div>
+    <div class="onb-dot"></div>
+  </div>
+  <div class="onb-footer">
+    <button class="onb-btn" id="onbBtn" onclick="onbNext()">Próximo</button>
+    <button class="onb-skip" onclick="onbSkip()">Pular</button>
+  </div>
+</div>
 
 <!-- INSTALL SCREEN -->
 <div id="installScreen" class="hidden">
@@ -589,6 +694,10 @@
       <label>Data que comecei o tratamento</label>
       <input type="date" id="goalStartDate">
     </div>
+    <div class="field">
+      <label>Sua altura (cm)</label>
+      <input type="number" id="goalHeight" step="1" placeholder="ex: 165" inputmode="numeric" min="100" max="250">
+    </div>
     <button class="btn-primary" onclick="saveGoal()">💾 Salvar Meta</button>
     <p style="font-size:11px;color:var(--text-soft);margin-top:10px;line-height:1.5;">💡 Atualize o peso atual aqui sempre que quiser, ou registre semana a semana no diário abaixo.</p>
   </div>
@@ -661,6 +770,39 @@
   <div class="card">
     <div class="card-title">📊 Progressão de Dose</div>
     <div id="doseProgress"></div>
+  </div>
+
+  <!-- IMC + PROTEÍNA -->
+  <div class="card" id="imcProteinCard" style="display:none">
+    <div class="card-title">🧬 Corpo & Nutrição</div>
+    <div class="imc-row">
+      <div class="imc-box imc">
+        <div class="imc-num" id="imcValue">—</div>
+        <div class="imc-label">IMC</div>
+        <div class="imc-faixa" id="imcFaixa"></div>
+      </div>
+      <div class="imc-box protein">
+        <div class="imc-num" id="proteinLow">—</div>
+        <div class="imc-label">proteína/dia</div>
+        <div class="protein-range">🥩 Entre <strong id="proteinRange">—</strong> g</div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--text-soft);line-height:1.6;text-align:center;">💡 A proteína ajuda a preservar músculo durante o emagrecimento. A recomendação é de <strong>1.6 a 2.2 g por kg</strong> de peso corporal.</p>
+  </div>
+
+  <!-- ACHIEVEMENTS -->
+  <div class="card" id="achievementsCard">
+    <div class="card-title">🏆 Conquistas</div>
+    <div id="achievementsList"></div>
+  </div>
+
+  <!-- SHARE CARD -->
+  <div class="card" id="shareCard">
+    <div class="card-title">📸 Compartilhar Progresso</div>
+    <p style="font-size:13px;color:var(--text-soft);line-height:1.6;margin-bottom:12px;">Gere uma imagem bonita com seu progresso para compartilhar — sem dados sensíveis, só a conquista!</p>
+    <button class="btn-primary" onclick="generateShareCard()" style="background:var(--sage)">✨ Gerar Cartão</button>
+    <canvas id="shareCanvas" width="600" height="800" style="display:none"></canvas>
+    <div id="sharePreview" style="margin-top:12px;text-align:center"></div>
   </div>
 
   <!-- ROTATION MAP -->
@@ -762,6 +904,84 @@ function updateCalendarTips() {
     if (t1) t1.innerHTML = '💡 Toque em <strong>"Agendar Próxima Dose"</strong> e depois no link azul <strong>"Abrir Google Calendar"</strong>. É só Salvar!';
     if (t2) t2.innerHTML = 'Após salvar, toque em <strong>"Agendar Próxima Dose"</strong> → link azul <strong>"Abrir Google Calendar"</strong> → <strong>Salvar</strong>. Depois é só voltar ao app! 🎉';
   }
+}
+
+// ======= ONBOARDING =======
+let onbSlideIdx = 0;
+const ONB_TOTAL = 3;
+
+function initOnboarding() {
+  const done = localStorage.getItem('tirzOnboardingDone');
+  if (done) {
+    document.getElementById('onboardingScreen').classList.add('hidden');
+    return true; // já fez, pode seguir
+  }
+  document.getElementById('onboardingScreen').classList.remove('hidden');
+  document.getElementById('loginScreen').classList.add('hidden');
+  onbSlideIdx = 0;
+  updateOnbDots();
+  updateOnbBtn();
+  // Swipe detection
+  const slides = document.getElementById('onbSlides');
+  slides.addEventListener('scroll', onbScroll, {passive:true});
+  let touchX = 0;
+  slides.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive:true});
+  slides.addEventListener('touchend', e => {
+    const diff = touchX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0 && onbSlideIdx < ONB_TOTAL - 1) onbGoTo(onbSlideIdx + 1);
+      else if (diff < 0 && onbSlideIdx > 0) onbGoTo(onbSlideIdx - 1);
+    }
+  });
+  return false; // onboarding mostrado, segura o fluxo
+}
+
+function onbScroll() {
+  const slides = document.getElementById('onbSlides');
+  const w = slides.clientWidth;
+  const idx = Math.round(slides.scrollLeft / w);
+  if (idx !== onbSlideIdx) {
+    onbSlideIdx = idx;
+    updateOnbDots();
+    updateOnbBtn();
+  }
+}
+
+function onbGoTo(idx) {
+  onbSlideIdx = idx;
+  const slides = document.getElementById('onbSlides');
+  slides.scrollTo({left: idx * slides.clientWidth, behavior: 'smooth'});
+  updateOnbDots();
+  updateOnbBtn();
+}
+
+function updateOnbDots() {
+  const dots = document.querySelectorAll('#onbDots .onb-dot');
+  dots.forEach((d,i) => d.classList.toggle('active', i === onbSlideIdx));
+}
+
+function updateOnbBtn() {
+  const btn = document.getElementById('onbBtn');
+  btn.textContent = onbSlideIdx === ONB_TOTAL - 1 ? '✨ Começar' : 'Próximo';
+}
+
+function onbNext() {
+  if (onbSlideIdx < ONB_TOTAL - 1) {
+    onbGoTo(onbSlideIdx + 1);
+  } else {
+    onbFinish();
+  }
+}
+
+function onbSkip() {
+  onbFinish();
+}
+
+function onbFinish() {
+  localStorage.setItem('tirzOnboardingDone', '1');
+  document.getElementById('onboardingScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  initLogin();
 }
 
 // ======= LOGIN =======
@@ -909,19 +1129,19 @@ function saveGoalData(g) { localStorage.setItem('tirzGoal', JSON.stringify(g)); 
 // ======= INIT =======
 window.onload = () => {
   // Force reload if cached version is outdated (PWA cache-bust)
-  const APP_VERSION = '14';
+  const APP_VERSION = '15';
   const cachedVer = localStorage.getItem('tirzAppVersion');
   if (cachedVer && cachedVer !== APP_VERSION) {
-    // Nova versão — recarrega sem cache
     localStorage.setItem('tirzAppVersion', APP_VERSION);
     if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
-      // PWA: força reload limpo
       window.location.reload(true);
       return;
     }
   }
   localStorage.setItem('tirzAppVersion', APP_VERSION);
-  initLogin();
+  // Tenta onboarding primeiro; se já feito, vai pro login
+  const skipLogin = initOnboarding();
+  if (skipLogin) initLogin();
 };
 
 function initApp() {
@@ -1119,29 +1339,26 @@ function renderSymptomHistory() {
     const d = new Date(s.date + 'T12:00:00');
     const dateStr = d.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'short'});
     const chips = s.chips.map(c => `<span class="symptom-tag">${c}</span>`).join('');
-    return `<div class="history-item">
-      <div class="history-dot" style="font-size:9px;width:44px;height:44px">
-        ${d.getDate().toString().padStart(2,'0')}<small>${d.toLocaleString('pt-BR',{month:'short'}).replace('.','')}</small>
+    return `<div class="swipe-container" style="margin-bottom:2px">
+      <div class="swipe-item" data-delete-id="${s.date}">
+        <div class="history-item" style="border-bottom:none;padding:13px 0;margin:0">
+          <div class="history-dot" style="font-size:9px;width:44px;height:44px">
+            ${d.getDate().toString().padStart(2,'0')}<small>${d.toLocaleString('pt-BR',{month:'short'}).replace('.','')}</small>
+          </div>
+          <div class="history-info">
+            <div class="history-date">${dateStr}</div>
+            <div class="history-symptoms" style="margin-top:5px">${chips}</div>
+            ${s.notes ? `<div style="font-size:12px;color:var(--text-soft);margin-top:4px;">📝 ${s.notes}</div>` : ''}
+          </div>
+        </div>
       </div>
-      <div class="history-info">
-        <div class="history-date">${dateStr}</div>
-        <div class="history-symptoms" style="margin-top:5px">${chips}</div>
-        ${s.notes ? `<div style="font-size:12px;color:var(--text-soft);margin-top:4px;">📝 ${s.notes}</div>` : ''}
-      </div>
-      <button class="delete-btn" onclick="deleteSymptom('${s.date}')">✕</button>
+      <div class="swipe-bg">🗑 Apagar</div>
     </div>`;
   }).join('');
+  enableSwipeDelete('#symptomHistoryList', (date) => deleteSymptom(date));
 }
 
 function deleteSymptom(date) {
-  const key = 'del_sym_' + date;
-  if (!window[key]) {
-    window[key] = true;
-    showToast('⚠️ Toque novamente para apagar');
-    setTimeout(() => { window[key] = false; }, 3000);
-    return;
-  }
-  window[key] = false;
   saveSymptomData(getSymptoms().filter(s => s.date !== date));
   renderSymptomHistory();
   showToast('🗑 Registro apagado');
@@ -1362,7 +1579,6 @@ function renderHistory() {
     const time = d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     const appDate = a.datetime.slice(0,10);
 
-    // Find symptoms registered on same day or up to 3 days after application
     const linked = symptoms.filter(s => {
       const diff = (new Date(s.date+' 12:00') - new Date(appDate+' 12:00')) / 86400000;
       return diff >= 0 && diff <= 3;
@@ -1371,28 +1587,25 @@ function renderHistory() {
     const syms = linked.flatMap(s => s.chips).filter((v,i,arr)=>arr.indexOf(v)===i)
       .map(c => `<span class="symptom-tag">${c}</span>`).join('');
 
-    return `<div class="history-item">
-      <div class="history-dot">${day}<small>${mon}</small></div>
-      <div class="history-info">
-        <div class="history-dose">${a.dose.toFixed(1)} mg${a.site ? ' · '+a.site : ''}</div>
-        <div class="history-date">${d.toLocaleDateString('pt-BR',{weekday:'long'})} às ${time}</div>
-        ${syms ? `<div style="margin-top:5px"><div style="font-size:10px;color:var(--text-soft);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px">sintomas pós-dose</div><div class="history-symptoms">${syms}</div></div>` : ''}
-        ${a.notes ? `<div style="font-size:12px;color:var(--text-soft);margin-top:4px;">📝 ${a.notes}</div>` : ''}
+    return `<div class="swipe-container" style="margin-bottom:2px">
+      <div class="swipe-item" data-delete-id="${a.id}">
+        <div class="history-item" style="border-bottom:none;padding:13px 0;margin:0">
+          <div class="history-dot">${day}<small>${mon}</small></div>
+          <div class="history-info">
+            <div class="history-dose">${a.dose.toFixed(1)} mg${a.site ? ' · '+a.site : ''}</div>
+            <div class="history-date">${d.toLocaleDateString('pt-BR',{weekday:'long'})} às ${time}</div>
+            ${syms ? `<div style="margin-top:5px"><div style="font-size:10px;color:var(--text-soft);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px">sintomas pós-dose</div><div class="history-symptoms">${syms}</div></div>` : ''}
+            ${a.notes ? `<div style="font-size:12px;color:var(--text-soft);margin-top:4px;">📝 ${a.notes}</div>` : ''}
+          </div>
+        </div>
       </div>
-      <button class="delete-btn" onclick="deleteApp(${a.id})">✕</button>
+      <div class="swipe-bg">🗑 Apagar</div>
     </div>`;
   }).join('');
+  enableSwipeDelete('#historyList', (id) => deleteApp(Number(id)));
 }
 
 function deleteApp(id) {
-  const key = 'del_app_' + id;
-  if (!window[key]) {
-    window[key] = true;
-    showToast('⚠️ Toque novamente para apagar');
-    setTimeout(() => { window[key] = false; }, 3000);
-    return;
-  }
-  window[key] = false;
   saveApps(getApps().filter(a => a.id !== id));
   renderHistory(); updateHeaderDose(); updateSummary();
   showToast('🗑 Aplicação apagada');
@@ -1406,6 +1619,7 @@ function loadGoalForm() {
   document.getElementById('goalCurrent').value = g.current || '';
   document.getElementById('goalTarget').value = g.target || '';
   document.getElementById('goalStartDate').value = g.startDate || '';
+  document.getElementById('goalHeight').value = g.height || '';
 }
 
 function saveGoal() {
@@ -1413,11 +1627,14 @@ function saveGoal() {
   const current = parseFloat(document.getElementById('goalCurrent').value);
   const target = parseFloat(document.getElementById('goalTarget').value);
   const startDate = document.getElementById('goalStartDate').value;
+  const height = parseFloat(document.getElementById('goalHeight').value) || 0;
   if (isNaN(start) || isNaN(target)) { showToast('⚠️ Preencha peso inicial e meta'); return; }
   if (target >= start) { showToast('⚠️ A meta deve ser menor que o peso inicial'); return; }
   const currentVal = isNaN(current) ? start : current;
-  saveGoalData({ start, current: currentVal, target, startDate });
+  saveGoalData({ start, current: currentVal, target, startDate, height });
   updateGoalProgress();
+  updateIMCProtein();
+  updateSummary();
   showToast('🎯 Meta salva!');
 }
 
@@ -1532,25 +1749,20 @@ function renderWeightHistory() {
   if (!weights.length) { el.innerHTML='<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:10px 0">Nenhum peso registrado ainda.</p>'; return; }
   el.innerHTML = [...weights].reverse().map(w=>{
     const d = new Date(w.date+'T12:00:00');
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;">
-      <span style="color:var(--text-soft)">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'2-digit'})}</span>
-      <div style="display:flex;align-items:center;gap:10px">
-        <strong>${w.kg.toFixed(1)} kg</strong>
-        <button onclick="deleteWeight('${w.date}')" style="background:none;border:none;color:var(--rose-light);font-size:16px;cursor:pointer;line-height:1;padding:2px">✕</button>
+    return `<div class="swipe-container" style="margin-bottom:2px">
+      <div class="swipe-item" data-delete-id="${w.date}" style="background:var(--warm-white);border-radius:8px;padding:9px 12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;">
+          <span style="color:var(--text-soft)">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'2-digit'})}</span>
+          <strong>${w.kg.toFixed(1)} kg</strong>
+        </div>
       </div>
+      <div class="swipe-bg" style="border-radius:0 8px 8px 0">🗑 Apagar</div>
     </div>`;
   }).join('');
+  enableSwipeDelete('#weightHistory', (date) => deleteWeight(date));
 }
 
 function deleteWeight(date) {
-  const key = 'del_wt_' + date;
-  if (!window[key]) {
-    window[key] = true;
-    showToast('⚠️ Toque novamente para apagar');
-    setTimeout(() => { window[key] = false; }, 3000);
-    return;
-  }
-  window[key] = false;
   saveWeights(getWeights().filter(w => w.date !== date));
   drawWeightChart(); renderWeightHistory(); updateGoalProgress(); updateSummary();
   showToast('🗑 Peso removido');
@@ -1710,7 +1922,53 @@ function updateSummary() {
 
     // Rotation summary — versão inteligente com sugestão
     renderRotation();
+
+    // IMC + Proteína
+    updateIMCProtein();
+
+    // Achievements
+    checkAchievements();
   } catch(e) { console.error('updateSummary:', e); }
+}
+
+// ======= IMC & PROTEÍNA =======
+function updateIMCProtein() {
+  const card = document.getElementById('imcProteinCard');
+  const goal = getGoal();
+  const weights = getWeights();
+
+  // Peso atual: último peso do diário > peso atual da meta > peso inicial
+  let currentW = null;
+  if (weights.length > 0) currentW = weights[weights.length-1].kg;
+  else if (goal && goal.current) currentW = goal.current;
+  else if (goal && goal.start) currentW = goal.start;
+
+  if (!currentW || !goal || !goal.height) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+
+  const heightM = goal.height / 100;
+  const imc = currentW / (heightM * heightM);
+  const imcRound = imc.toFixed(1);
+
+  let faixa = '', faixaCls = '';
+  if (imc < 18.5) { faixa = 'Abaixo do peso'; faixaCls = 'atencao'; }
+  else if (imc < 25) { faixa = 'Peso normal'; faixaCls = 'normal'; }
+  else if (imc < 30) { faixa = 'Sobrepeso'; faixaCls = 'atencao'; }
+  else { faixa = 'Obesidade'; faixaCls = 'alerta'; }
+
+  const protLow = Math.round(currentW * 1.6);
+  const protHigh = Math.round(currentW * 2.2);
+
+  if (card) {
+    card.style.display = 'block';
+    document.getElementById('imcValue').textContent = imcRound;
+    document.getElementById('imcFaixa').textContent = faixa;
+    document.getElementById('imcFaixa').className = 'imc-faixa ' + faixaCls;
+    document.getElementById('proteinLow').textContent = protLow;
+    document.getElementById('proteinRange').textContent = protLow + ' — ' + protHigh;
+  }
 }
 
 // ======= NOTIFICATIONS =======
@@ -1757,10 +2015,293 @@ function clearData() {
   updateHeaderDose(); updateNextDoseBadge(); updateSummary(); updateGoalProgress();
 }
 
+// ======= SHARE CARD =======
+function generateShareCard() {
+  const apps = getApps();
+  const weights = getWeights();
+  const goal = getGoal();
+  if (!weights.length) { showToast('⚠️ Registre pelo menos um peso primeiro'); return; }
+
+  const canvas = document.getElementById('shareCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = 600, H = 800;
+
+  // Fundo gradiente
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#FDF8F4');
+  grad.addColorStop(0.5, '#F9ECED');
+  grad.addColorStop(1, '#FDF8F4');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Círculo decorativo
+  ctx.fillStyle = 'rgba(196,113,122,0.08)';
+  ctx.beginPath(); ctx.arc(W/2, 180, 140, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(196,113,122,0.05)';
+  ctx.beginPath(); ctx.arc(W/2, 180, 200, 0, Math.PI*2); ctx.fill();
+
+  // Emoji
+  ctx.font = '64px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('💉', W/2, 160);
+
+  // Título
+  ctx.font = 'bold 36px "DM Serif Display", serif';
+  ctx.fillStyle = '#C4717A';
+  ctx.fillText('Minha Tirze', W/2, 240);
+
+  // Subtítulo
+  ctx.font = '16px "DM Sans", sans-serif';
+  ctx.fillStyle = '#7A6568';
+  ctx.fillText('Jornada de tratamento com tirzepatida', W/2, 270);
+
+  // Linha decorativa
+  ctx.strokeStyle = 'rgba(196,113,122,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(120, 295); ctx.lineTo(480, 295); ctx.stroke();
+
+  // Métricas
+  const y0 = 350;
+  const lostKg = weights.length >= 2 ? (weights[0].kg - weights[weights.length-1].kg).toFixed(1) : '—';
+  const weeks = apps.length > 0 ? Math.max(1, Math.ceil(apps.length)) : '—';
+
+  // Box: kg perdidos
+  ctx.fillStyle = 'white';
+  roundRect(ctx, 100, y0, 180, 100, 16);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(196,113,122,0.2)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.font = 'bold 42px "DM Serif Display", serif';
+  ctx.fillStyle = '#C4717A';
+  ctx.textAlign = 'center';
+  ctx.fillText(lostKg, 190, y0 + 52);
+  ctx.font = '13px "DM Sans", sans-serif';
+  ctx.fillStyle = '#7A6568';
+  ctx.fillText('kg perdidos', 190, y0 + 78);
+
+  // Box: semanas
+  ctx.fillStyle = 'white';
+  roundRect(ctx, 320, y0, 180, 100, 16);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(196,113,122,0.2)';
+  ctx.stroke();
+
+  ctx.font = 'bold 42px "DM Serif Display", serif';
+  ctx.fillStyle = '#C4717A';
+  ctx.fillText(weeks, 410, y0 + 52);
+  ctx.font = '13px "DM Sans", sans-serif';
+  ctx.fillStyle = '#7A6568';
+  ctx.fillText('semanas', 410, y0 + 78);
+
+  // Meta
+  if (goal && goal.start && goal.target) {
+    const pct = weights.length >= 2 ? Math.round(((goal.start - weights[weights.length-1].kg) / (goal.start - goal.target)) * 100) : 0;
+    const yMeta = y0 + 150;
+    ctx.font = '14px "DM Sans", sans-serif';
+    ctx.fillStyle = '#7A6568';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Meta: ${goal.start.toFixed(0)} → ${goal.target.toFixed(0)} kg · ${Math.max(0,pct)}% concluído`, W/2, yMeta);
+
+    // Barra de progresso
+    const barX = 80, barW = 440, barH = 8;
+    ctx.fillStyle = '#e8d0d3';
+    roundRect(ctx, barX, yMeta + 16, barW, barH, 4);
+    ctx.fill();
+    ctx.fillStyle = '#C4717A';
+    roundRect(ctx, barX, yMeta + 16, barW * Math.min(1, pct/100), barH, 4);
+    ctx.fill();
+  }
+
+  // Frase motivacional
+  const quoteY = goal ? 570 : 520;
+  ctx.font = 'italic 18px "DM Serif Display", serif';
+  ctx.fillStyle = '#C9A96E';
+  ctx.textAlign = 'center';
+  const quotes = [
+    'Cada dose é um passo na direção certa.',
+    'Você está mais perto do que ontem.',
+    'Seu esforço merece ser celebrado.',
+    'O progresso é silencioso, mas constante.',
+    'Confie no processo. Você está indo bem!'
+  ];
+  ctx.fillText('"' + quotes[Math.floor(Math.random()*quotes.length)] + '"', W/2, quoteY);
+
+  // Footer
+  ctx.font = '11px "DM Sans", sans-serif';
+  ctx.fillStyle = '#b0888c';
+  ctx.fillText('app.minhatirze.app · seus dados, só seus', W/2, H - 30);
+
+  // Mostrar preview
+  const img = document.createElement('img');
+  img.src = canvas.toDataURL('image/png');
+  img.style.cssText = 'width:100%;max-width:300px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);margin-top:8px';
+  img.onclick = function() {
+    // Abre em nova aba para salvar
+    const w = window.open('');
+    w.document.write('<img src="' + img.src + '" style="max-width:100%"><p style="text-align:center;font-family:sans-serif;color:#666">Toque e segure para salvar</p>');
+  };
+  const preview = document.getElementById('sharePreview');
+  preview.innerHTML = '<p style="font-size:12px;color:var(--sage);margin-bottom:6px;">✅ Toque na imagem para abrir e salvar</p>';
+  preview.appendChild(img);
+  showToast('📸 Cartão gerado!');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
 // ======= TOAST =======
-function showToast(msg) {
+function showToast(msg, dur) {
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
+  setTimeout(()=>t.classList.remove('show'), dur || 2500);
+}
+
+function getAchievements() { return JSON.parse(localStorage.getItem('tirzAch') || '[]'); }
+function saveAchievements(a) { localStorage.setItem('tirzAch', JSON.stringify(a)); }
+
+const ACHIEVEMENTS = [
+  { id: 'first_dose', icon: '💉', name: 'Primeira dose', desc: 'Registrou sua primeira aplicação' },
+  { id: '4_weeks', icon: '🔥', name: '4 semanas', desc: 'Completou 4 aplicações' },
+  { id: '12_weeks', icon: '🔥🔥', name: '12 semanas', desc: 'Completou 12 aplicações — 3 meses!' },
+  { id: 'lost_5kg', icon: '⭐', name: '-5 kg', desc: 'Perdeu 5 quilos' },
+  { id: 'lost_10kg', icon: '🌟', name: '-10 kg', desc: 'Perdeu 10 quilos — incrível!' },
+  { id: 'goal_hit', icon: '🎯', name: 'Meta atingida!', desc: 'Chegou no peso que queria' },
+  { id: '7_symptoms', icon: '📅', name: 'Diário consistente', desc: 'Registrou sintomas 7 dias diferentes' },
+  { id: 'all_zones', icon: '🗺', name: 'Rodízio completo', desc: 'Usou todas as 4 regiões do corpo' },
+];
+
+function checkAchievements() {
+  const apps = getApps();
+  const weights = getWeights();
+  const symptoms = getSymptoms();
+  const goal = getGoal();
+  const unlocked = getAchievements();
+  let newUnlocks = [];
+
+  const tryUnlock = (id) => {
+    if (!unlocked.includes(id)) { unlocked.push(id); newUnlocks.push(id); }
+  };
+
+  if (apps.length >= 1) tryUnlock('first_dose');
+  if (apps.length >= 4) tryUnlock('4_weeks');
+  if (apps.length >= 12) tryUnlock('12_weeks');
+
+  if (weights.length >= 2) {
+    const lost = weights[0].kg - weights[weights.length-1].kg;
+    if (lost >= 5) tryUnlock('lost_5kg');
+    if (lost >= 10) tryUnlock('lost_10kg');
+  }
+
+  if (goal && weights.length > 0) {
+    const currentW = weights[weights.length-1].kg;
+    if (currentW <= goal.target) tryUnlock('goal_hit');
+  }
+
+  const uniqueSymptomDays = new Set(symptoms.map(s => s.date));
+  if (uniqueSymptomDays.size >= 7) tryUnlock('7_symptoms');
+
+  if (apps.length >= 4) {
+    const zonesUsed = new Set(apps.map(a => {
+      const s = (a.site || '').toLowerCase();
+      if (s.includes('abdômen') || s.includes('abdomen')) return 'abdomen';
+      if (s.includes('coxa')) return 'coxa';
+      if (s.includes('braço') || s.includes('braco')) return 'braco';
+      if (s.includes('flanco')) return 'flanco';
+      return s;
+    }));
+    if (zonesUsed.size >= 4) tryUnlock('all_zones');
+  }
+
+  if (newUnlocks.length) {
+    saveAchievements(unlocked);
+    newUnlocks.forEach(id => {
+      const ach = ACHIEVEMENTS.find(a => a.id === id);
+      if (ach) showToast('🏆 Conquista! ' + ach.icon + ' ' + ach.name, 3500);
+    });
+  }
+
+  renderAchievements();
+}
+
+function renderAchievements() {
+  const el = document.getElementById('achievementsList');
+  if (!el) return;
+  const unlocked = getAchievements();
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const done = unlocked.includes(a.id);
+    return `<div class="ach-item">
+      <div class="ach-icon${done ? ' unlocked' : ''}">${done ? a.icon : '🔒'}</div>
+      <div class="ach-info">
+        <div class="ach-name${done ? '' : ' locked'}">${a.name}</div>
+        <div class="ach-desc">${done ? a.desc : 'Continue registrando...'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ======= SWIPE-TO-DELETE =======
+function enableSwipeDelete(containerSelector, onDelete) {
+  const container = document.querySelector(containerSelector);
+  if (!container) return;
+  container.addEventListener('touchstart', function(e) {
+    const item = e.target.closest('.swipe-item');
+    if (!item) { resetAllSwipes(container); return; }
+    item._startX = e.touches[0].clientX;
+    item._startY = e.touches[0].clientY;
+    item._swiped = false;
+  }, {passive:true});
+  container.addEventListener('touchmove', function(e) {
+    const item = e.target.closest('.swipe-item');
+    if (!item || item._startX === undefined) return;
+    const dx = e.touches[0].clientX - item._startX;
+    const dy = e.touches[0].clientY - item._startY;
+    if (Math.abs(dy) > Math.abs(dx)) return; // scroll vertical
+    if (dx < -20) {
+      e.preventDefault();
+      item._swiped = true;
+      item.style.transform = 'translateX(-80px)';
+      item.style.borderRadius = '12px 0 0 12px';
+    }
+  }, {passive:false});
+  container.addEventListener('touchend', function(e) {
+    const item = e.target.closest('.swipe-item');
+    if (!item) return;
+    if (item._swiped && item._startX - e.changedTouches[0].clientX > 40) {
+      // Delete!
+      const id = item.dataset.deleteId;
+      if (id) onDelete(id);
+    } else {
+      // Reset
+      item.style.transform = '';
+      item.style.borderRadius = '';
+    }
+    delete item._startX; delete item._startY; delete item._swiped;
+  });
+  // Click fallback no bg vermelho
+  container.addEventListener('click', function(e) {
+    const bg = e.target.closest('.swipe-bg');
+    if (bg) {
+      const item = bg.parentElement.querySelector('.swipe-item');
+      if (item && item.dataset.deleteId) onDelete(item.dataset.deleteId);
+    }
+  });
+}
+function resetAllSwipes(container) {
+  container.querySelectorAll('.swipe-item').forEach(item => {
+    item.style.transform = ''; item.style.borderRadius = '';
+    delete item._startX; delete item._startY; delete item._swiped;
+  });
 }
 
 window.addEventListener('resize',()=>{ if(document.getElementById('page-peso').classList.contains('active')) drawWeightChart(); });
