@@ -23,15 +23,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <style>
-  /* Prevent flash: hide body immediately, install screen reveals */
+  /* Prevent flash: invisible until unlocked */
   html, body { background: #FDF8F4; }
-  body > *:not(#installScreen):not(#loginScreen):not(#onboardingScreen):not(#shareModal):not(.toast) {
-    display: none;
-  }
-  body.unlocked > * { display: revert; }
-  body.unlocked > #installScreen.hidden,
-  body.unlocked > #loginScreen.hidden,
-  body.unlocked > #onboardingScreen.hidden { display: none; }
 
   :root {
     --rose: #C4717A;
@@ -1446,7 +1439,6 @@ function handleGoogleResult(result) {
 
 function unlockApp() {
   document.body.classList.remove('login-locked');
-  document.body.classList.add('unlocked');
   document.getElementById('loginScreen').classList.add('hidden');
   // Reset scroll to top after DOM settles
   requestAnimationFrame(() => {
