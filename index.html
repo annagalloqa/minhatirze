@@ -430,6 +430,8 @@
     </div>
   </div>
 
+  <button onclick="closeInstallScreen()" style="background:none;border:none;color:var(--text-soft);font-size:13px;cursor:pointer;text-decoration:underline;margin-top:8px;padding:12px;">Pular — já instalei ✨</button>
+
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -1077,7 +1079,6 @@ function checkInstallScreen() {
 function closeInstallScreen() {
   document.getElementById('installScreen').classList.add('hidden');
 }
-
 function showInstallTab(platform, btn) {
   document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
