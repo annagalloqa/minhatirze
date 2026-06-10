@@ -1375,17 +1375,16 @@ function handleLogin() {
 }
 
 async function loadAndUnlock() {
+  // NUNCA espera Firestore — destrava primeiro, carrega depois
+  unlockApp();
   try {
     await loadUserData();
-    // Migrate localStorage data if present
     if (localStorage.getItem('tirzApps') || localStorage.getItem('tirzWeights') || localStorage.getItem('tirzGoal')) {
       await migrateFromLocalStorage();
     }
   } catch(e) {
-    console.error('loadAndUnlock error:', e);
+    console.error('loadAndUnlock:', e);
   }
-  // Always unlock, even if Firestore load fails
-  unlockApp();
 }
 
 function resetAll() {
@@ -1539,8 +1538,12 @@ async function loadUserData() {
   try {
     const doc = userDoc();
     if (!doc) return;
-    const snap = await doc.get();
-    if (!snap.exists) return;
+    // Timeout de 5 segundos — nunca trava
+    const snap = await Promise.race([
+      doc.get(),
+      new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 5000); })
+    ]);
+    if (!snap || !snap.exists) return;
     const d = snap.data();
     _userNameCache = d.name || '';
     _nextDoseCache = d.nextDose || '';
