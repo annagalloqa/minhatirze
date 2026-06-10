@@ -2043,6 +2043,7 @@ function clearData() {
 
 // ======= SHARE CARD =======
 let shareImageDataUrl = '';
+let shareImageBlobUrl = '';
 
 function generateShareCard() {
   const apps = getApps();
@@ -2132,7 +2133,6 @@ function generateShareCard() {
     ctx.textAlign = 'center';
     ctx.fillText('Meta: ' + goal.start.toFixed(0) + ' → ' + goal.target.toFixed(0) + ' kg · ' + Math.max(0,pct) + '% concluído', W/2, yMeta);
 
-    // Barra de progresso
     const barX = 80, barW = 440, barH = 8;
     ctx.fillStyle = '#e8d0d3';
     roundRect(ctx, barX, yMeta + 16, barW, barH, 4);
@@ -2142,7 +2142,6 @@ function generateShareCard() {
     ctx.fill();
   }
 
-  // Frase motivacional
   const quoteY = goal ? 570 : 520;
   ctx.font = 'italic 18px "DM Serif Display", serif';
   ctx.fillStyle = '#C9A96E';
@@ -2156,26 +2155,24 @@ function generateShareCard() {
   ];
   ctx.fillText('"' + quotes[Math.floor(Math.random()*quotes.length)] + '"', W/2, quoteY);
 
-  // Footer
   ctx.font = '11px "DM Sans", sans-serif';
   ctx.fillStyle = '#b0888c';
   ctx.fillText('app.minhatirze.app · seus dados, só seus', W/2, H - 30);
 
-  // Salvar data URL e abrir modal
+  // Gerar Blob URL (funciona como download de verdade, não preview)
   shareImageDataUrl = canvas.toDataURL('image/png');
-  document.getElementById('shareModalImg').src = shareImageDataUrl;
+  canvas.toBlob(function(blob) {
+    // Revoga URL antiga se existir
+    if (shareImageBlobUrl) URL.revokeObjectURL(shareImageBlobUrl);
+    shareImageBlobUrl = URL.createObjectURL(blob);
+    document.getElementById('shareModalImg').src = shareImageBlobUrl;
+  }, 'image/png');
+
   document.getElementById('shareModal').classList.add('show');
 
-  // Mostrar/ocultar botão de share nativo (funciona no iPhone e Android Chrome)
+  // Verificar se share nativo funciona
   const nativeBtn = document.getElementById('shareNativeBtn');
-  const canShare = navigator.share && navigator.canShare;
-  if (canShare) {
-    // Testa se consegue compartilhar arquivo (Android Brave pode falhar)
-    nativeBtn.style.display = 'inline-block';
-    nativeBtn.textContent = isIOS ? '📤 Compartilhar' : '📤 Compartilhar';
-  } else {
-    nativeBtn.style.display = 'none';
-  }
+  nativeBtn.style.display = navigator.share ? 'inline-block' : 'none';
 
   showToast('📸 Toque em Compartilhar ou Salvar');
 }
@@ -2185,67 +2182,50 @@ function closeShareModal() {
 }
 
 async function shareNative() {
-  if (!shareImageDataUrl) return;
+  if (!shareImageBlobUrl) return;
   try {
-    const resp = await fetch(shareImageDataUrl);
+    const resp = await fetch(shareImageBlobUrl);
     const blob = await resp.blob();
-    const file = new File([blob], 'minha-tirze-progresso.png', {type: 'image/png'});
+    const file = new File([blob], 'minha-tirze.png', {type: 'image/png'});
     if (navigator.canShare && navigator.canShare({files: [file]})) {
-      await navigator.share({ files: [file], title: 'Minha Tirze - Meu Progresso' });
+      await navigator.share({files: [file]});
       closeShareModal();
       return;
     }
   } catch(e) {
-    // AbortError = usuário cancelou → só fecha, não faz nada
-    if (e.name === 'AbortError') { closeShareModal(); return; }
+    if (e.name === 'AbortError') return; // cancelou = ok
   }
-
-  // Fallback: compartilhar só texto (quando files não funciona)
-  try {
-    await navigator.share({
-      title: 'Minha Tirze - Meu Progresso',
-      text: 'Acompanhe meu progresso com tirzepatida! 📉💉'
-    });
-    closeShareModal();
-  } catch(e) {
-    if (e.name === 'AbortError') { closeShareModal(); return; }
-    showToast('⚠️ Não foi possível compartilhar. Tente Salvar.');
-  }
+  // Fallback: baixar
+  doDownload();
 }
 
 function saveShareImage() {
-  if (!shareImageDataUrl) return;
-
-  // Tenta share nativo primeiro (iPhone mostra "Salvar imagem", Android "Galeria")
-  if (navigator.share && navigator.canShare) {
-    fetch(shareImageDataUrl).then(r => r.blob()).then(blob => {
-      const file = new File([blob], 'minha-tirze-progresso.png', {type: 'image/png'});
+  if (navigator.share && navigator.canShare && shareImageBlobUrl) {
+    fetch(shareImageBlobUrl).then(r => r.blob()).then(blob => {
+      const file = new File([blob], 'minha-tirze.png', {type: 'image/png'});
       if (navigator.canShare({files: [file]})) {
-        return navigator.share({files: [file], title: 'Minha Tirze'});
+        return navigator.share({files: [file]});
       }
-      throw new Error('no file share');
-    }).then(() => {
-      closeShareModal();
-    }).catch(e => {
-      if (e.name === 'AbortError') return; // cancelou, ok
-      // Fallback: download via link
-      downloadFallback();
+      throw new Error('no share');
+    }).then(() => closeShareModal()).catch(e => {
+      if (e.name === 'AbortError') return;
+      doDownload();
     });
     return;
   }
-
-  // Sem share API: download direto
-  downloadFallback();
+  doDownload();
 }
 
-function downloadFallback() {
+function doDownload() {
+  if (!shareImageBlobUrl) return;
+  // Blob URL é same-origin → download attribute funciona!
   const a = document.createElement('a');
-  a.href = shareImageDataUrl;
+  a.href = shareImageBlobUrl;
   a.download = 'minha-tirze-progresso.png';
   a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  setTimeout(() => document.body.removeChild(a), 100);
+  setTimeout(function() { document.body.removeChild(a); }, 200);
   closeShareModal();
   showToast('💾 Imagem salva!');
 }
