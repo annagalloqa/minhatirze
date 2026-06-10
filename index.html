@@ -1337,9 +1337,12 @@ function handleLogin() {
     document.getElementById('loginError').textContent = '';
     document.getElementById('loginBtn').textContent = 'Criando...';
     auth.createUserWithEmailAndPassword(window._signupEmail, window._signupPass)
-      .then(function(userCred) {
-        // Save name — onAuthStateChanged will handle the rest (loadAndUnlock)
-        return saveUserName(window._signupName);
+      .then(async function(userCred) {
+        // Save name to Firestore
+        _userNameCache = window._signupName;
+        try { await saveUserName(window._signupName); } catch(e) {}
+        // Wait a tiny bit then unlock directly
+        setTimeout(function() { unlockApp(); }, 300);
       })
       .catch(function(error) {
         document.getElementById('loginError').textContent = error.message;
@@ -1358,8 +1361,9 @@ function handleLogin() {
   }
   document.getElementById('loginBtn').textContent = 'Entrando...';
   auth.signInWithEmailAndPassword(email, password)
-    .then(function() {
-      // onAuthStateChanged will handle loadAndUnlock
+    .then(async function() {
+      await loadUserData();
+      unlockApp();
     })
     .catch(function(error) {
       document.getElementById('loginError').textContent = error.message;
@@ -1423,12 +1427,11 @@ auth.getRedirectResult().then(function(result) {
 
 function handleGoogleResult(result) {
   const user = result.user;
-  if (user.displayName && !_userNameCache) {
-    saveUserName(user.displayName).then(function() {
-      // onAuthStateChanged will handle loadAndUnlock
-    });
+  if (user.displayName) {
+    _userNameCache = user.displayName;
+    saveUserName(user.displayName).catch(function(){});
   }
-  // onAuthStateChanged will handle loadAndUnlock
+  unlockApp();
 }
 
 function unlockApp() {
@@ -1563,7 +1566,10 @@ window.onload = () => {
   checkInstallScreen();
 
   // Wait for Firebase Auth to initialize, then route
+  let _authHandled = false;
   auth.onAuthStateChanged(function(user) {
+    if (_authHandled) return;
+    _authHandled = true;
     if (user) {
       // User is signed in → load data and unlock
       loadAndUnlock();
