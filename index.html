@@ -1337,12 +1337,11 @@ function handleLogin() {
     document.getElementById('loginError').textContent = '';
     document.getElementById('loginBtn').textContent = 'Criando...';
     auth.createUserWithEmailAndPassword(window._signupEmail, window._signupPass)
-      .then(async function(userCred) {
-        // Save name to Firestore
+      .then(function(userCred) {
+        // Salva nome no cache e destrava IMEDIATAMENTE
         _userNameCache = window._signupName;
-        try { await saveUserName(window._signupName); } catch(e) {}
-        // Wait a tiny bit then unlock directly
-        setTimeout(function() { unlockApp(); }, 300);
+        saveUserName(window._signupName).catch(function(){});
+        unlockApp();
       })
       .catch(function(error) {
         document.getElementById('loginError').textContent = error.message;
@@ -1361,8 +1360,9 @@ function handleLogin() {
   }
   document.getElementById('loginBtn').textContent = 'Entrando...';
   auth.signInWithEmailAndPassword(email, password)
-    .then(async function() {
-      await loadUserData();
+    .then(function() {
+      // Carrega dados em background e destrava já
+      loadUserData().catch(function(){});
       unlockApp();
     })
     .catch(function(error) {
