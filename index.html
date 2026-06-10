@@ -88,13 +88,11 @@
   .body-map-container svg { width: 100%; height: 100%; }
 
   /* Injection zones — clickable areas on the SVG */
-  .zone { cursor: pointer; transition: transform 0.15s ease; }
-  .zone:active { transform: scale(0.95); }
+  .zone { cursor: pointer; }
+  .zone:active { opacity: 0.8; }
   .zone:hover .zone-fill { opacity: 0.25 !important; }
   .zone.active .zone-fill { opacity: 1 !important; }
-  .zone-fill { opacity: 0; transition: opacity 0.2s ease; }
-  /* Borda tracejada mais visível no hover */
-  .zone:hover rect[fill="none"] { stroke-width: 2; opacity: 0.8 !important; }
+  .zone-fill { opacity: 0; transition: opacity 0.15s ease; }
 
   .body-map-label {
     margin-top: 0;
@@ -911,7 +909,7 @@ function saveGoalData(g) { localStorage.setItem('tirzGoal', JSON.stringify(g)); 
 // ======= INIT =======
 window.onload = () => {
   // Force reload if cached version is outdated (PWA cache-bust)
-  const APP_VERSION = '11';
+  const APP_VERSION = '12';
   const cachedVer = localStorage.getItem('tirzAppVersion');
   if (cachedVer && cachedVer !== APP_VERSION) {
     // Nova versão — recarrega sem cache
@@ -1076,10 +1074,6 @@ function selectZone(zoneId, label) {
   const lbl = document.getElementById('bodyMapLabel');
   lbl.textContent = '📍 ' + label;
   lbl.classList.remove('empty');
-
-  // Animação sutil de toque
-  el.style.transform = 'scale(1.08)';
-  setTimeout(() => { el.style.transform = ''; }, 150);
 }
 
 // ======= CHIPS =======
