@@ -2187,42 +2187,67 @@ function closeShareModal() {
 async function shareNative() {
   if (!shareImageDataUrl) return;
   try {
-    // Tentar compartilhar como arquivo (iPhone e Android Chrome)
     const resp = await fetch(shareImageDataUrl);
     const blob = await resp.blob();
     const file = new File([blob], 'minha-tirze-progresso.png', {type: 'image/png'});
     if (navigator.canShare && navigator.canShare({files: [file]})) {
       await navigator.share({ files: [file], title: 'Minha Tirze - Meu Progresso' });
+      closeShareModal();
       return;
     }
-  } catch(e) { /* fallback abaixo */ }
+  } catch(e) {
+    // AbortError = usuário cancelou → só fecha, não faz nada
+    if (e.name === 'AbortError') { closeShareModal(); return; }
+  }
 
-  // Fallback: compartilhar como URL (funciona em mais navegadores)
+  // Fallback: compartilhar só texto (quando files não funciona)
   try {
     await navigator.share({
       title: 'Minha Tirze - Meu Progresso',
-      text: 'Acompanhe meu progresso com tirzepatida!'
+      text: 'Acompanhe meu progresso com tirzepatida! 📉💉'
     });
+    closeShareModal();
   } catch(e) {
-    // Fallback final: salvar
-    saveShareImage();
+    if (e.name === 'AbortError') { closeShareModal(); return; }
+    showToast('⚠️ Não foi possível compartilhar. Tente Salvar.');
   }
 }
 
 function saveShareImage() {
   if (!shareImageDataUrl) return;
+
+  // Tenta share nativo primeiro (iPhone mostra "Salvar imagem", Android "Galeria")
+  if (navigator.share && navigator.canShare) {
+    fetch(shareImageDataUrl).then(r => r.blob()).then(blob => {
+      const file = new File([blob], 'minha-tirze-progresso.png', {type: 'image/png'});
+      if (navigator.canShare({files: [file]})) {
+        return navigator.share({files: [file], title: 'Minha Tirze'});
+      }
+      throw new Error('no file share');
+    }).then(() => {
+      closeShareModal();
+    }).catch(e => {
+      if (e.name === 'AbortError') return; // cancelou, ok
+      // Fallback: download via link
+      downloadFallback();
+    });
+    return;
+  }
+
+  // Sem share API: download direto
+  downloadFallback();
+}
+
+function downloadFallback() {
   const a = document.createElement('a');
   a.href = shareImageDataUrl;
   a.download = 'minha-tirze-progresso.png';
+  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  // Android pode abrir em vez de baixar — avisa
-  if (isAndroid) {
-    showToast('💾 Se a imagem abriu, toque e segure para salvar');
-  } else {
-    showToast('💾 Imagem salva!');
-  }
+  setTimeout(() => document.body.removeChild(a), 100);
+  closeShareModal();
+  showToast('💾 Imagem salva!');
 }
 
 function roundRect(ctx, x, y, w, h, r) {
