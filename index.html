@@ -16,6 +16,12 @@
 <link rel="icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- FIREBASE SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
 <style>
   :root {
     --rose: #C4717A;
@@ -342,7 +348,7 @@
     <div class="onb-slide">
       <div class="onb-emoji">🔒</div>
       <div class="onb-title">Seus dados<br>protegidos</div>
-      <p class="onb-desc">Tudo fica salvo só no seu celular. Crie uma senha de 4 dígitos e seus dados ficam seguros.</p>
+      <p class="onb-desc">Crie sua conta com email e senha. Seus dados ficam salvos na nuvem e sincronizados entre seus dispositivos.</p>
     </div>
   </div>
   <div class="onb-dots" id="onbDots">
@@ -422,7 +428,7 @@
 <div id="loginScreen">
   <div class="login-emoji">💉</div>
   <div class="login-logo">minha <span>tirzepatida</span></div>
-  <div class="login-sub">Seu diário particular de tratamento</div>
+  <div class="login-sub" id="loginSub">Seu diário particular de tratamento</div>
   <div style="width:100%;max-width:320px">
     <!-- SETUP: step 1 — name -->
     <div class="login-field" id="loginNameField" style="display:none">
@@ -433,19 +439,19 @@
     <!-- SETUP: step 2 — create PIN -->
     <div class="login-field" id="loginPinSetup" style="display:none">
       <label>Criar senha (4 dígitos)</label>
-      <input type="password" inputmode="numeric" maxlength="4" id="pinSetup" placeholder="••••" oninput="onPinSetupInput(this)">
+      <input type="password" inputmode="numeric" maxlength="4" id="pinSetup" placeholder="••••">
     </div>
     <!-- SETUP: step 3 — confirm PIN -->
     <div class="login-field" id="loginPinConfirm" style="display:none">
       <label>Confirmar senha</label>
-      <input type="password" inputmode="numeric" maxlength="4" id="pinConfirm" placeholder="••••" oninput="onPinConfirmInput(this)">
+      <input type="password" inputmode="numeric" maxlength="4" id="pinConfirm" placeholder="••••">
     </div>
     <!-- RETURNING: enter PIN -->
     <div id="loginPinEnter" style="display:none">
       <div id="loginWelcomeName" style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);text-align:center;margin-bottom:18px"></div>
       <div class="login-field">
         <label>Digite sua senha</label>
-        <input type="password" inputmode="numeric" maxlength="4" id="pinEnter" placeholder="••••" oninput="onPinEnterInput(this)" autofocus>
+        <input type="password" inputmode="numeric" maxlength="4" id="pinEnter" placeholder="••••" autofocus>
       </div>
     </div>
     <div class="login-error" id="loginError"></div>
@@ -863,6 +869,167 @@
 </div>
 
 <script>
+// ======= FIREBASE INIT =======
+const firebaseConfig = {
+  apiKey: "AIzaSyChpE5Y1LBxaOfSDM8x7VtT3WFWcRyMR1w",
+  authDomain: "minha-tirze.firebaseapp.com",
+  projectId: "minha-tirze",
+  storageBucket: "minha-tirze.firebasestorage.app",
+  messagingSenderId: "521181940599",
+  appId: "1:521181940599:web:55b283be8cd962b578ef72"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// Enable Firestore offline persistence
+db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+  if (err.code === 'failed-precondition') console.warn('Firestore offline: multiple tabs');
+  else if (err.code === 'unimplemented') console.warn('Firestore offline: not supported');
+});
+
+// ======= FIREBASE DATA LAYER =======
+// All localStorage replaced with Firestore. Data lives under /users/{uid}/...
+
+// Cache for current user's data to avoid repeated reads
+let _userCache = null;
+let _userUnsub = null;
+
+function userDoc() {
+  const u = auth.currentUser;
+  if (!u) return null;
+  return db.collection('users').doc(u.uid);
+}
+
+async function fbGet(field, fallback) {
+  try {
+    const doc = userDoc();
+    if (!doc) return fallback;
+    const snap = await doc.get();
+    if (!snap.exists) return fallback;
+    return snap.data()[field] !== undefined ? snap.data()[field] : fallback;
+  } catch(e) { console.error('fbGet', field, e); return fallback; }
+}
+
+async function fbSet(field, value) {
+  try {
+    const doc = userDoc();
+    if (!doc) return;
+    await doc.set({ [field]: value }, { merge: true });
+  } catch(e) { console.error('fbSet', field, e); }
+}
+
+// Sub-collection helpers
+async function fbGetCol(col, fallback) {
+  try {
+    const u = auth.currentUser;
+    if (!u) return fallback;
+    const snap = await db.collection('users').doc(u.uid).collection(col)
+      .orderBy('__order', 'asc').get();
+    if (snap.empty) return fallback;
+    return snap.docs.map(d => d.data());
+  } catch(e) { console.error('fbGetCol', col, e); return fallback; }
+}
+
+async function fbAddCol(col, doc) {
+  try {
+    const u = auth.currentUser;
+    if (!u) return;
+    // Use timestamp as order key so we can sort later
+    await db.collection('users').doc(u.uid).collection(col)
+      .doc(String(doc.id || doc.date || Date.now()))
+      .set({ ...doc, __order: Date.now() });
+  } catch(e) { console.error('fbAddCol', col, e); }
+}
+
+async function fbDeleteCol(col, docId) {
+  try {
+    const u = auth.currentUser;
+    if (!u) return;
+    await db.collection('users').doc(u.uid).collection(col)
+      .doc(String(docId)).delete();
+  } catch(e) { console.error('fbDeleteCol', col, e); }
+}
+
+// ======= MIGRATION: localStorage → Firestore =======
+async function migrateFromLocalStorage() {
+  try {
+    // Read old localStorage data
+    const oldApps = JSON.parse(localStorage.getItem('tirzApps') || '[]');
+    const oldWeights = JSON.parse(localStorage.getItem('tirzWeights') || '[]');
+    const oldGoal = JSON.parse(localStorage.getItem('tirzGoal') || 'null');
+    const oldSymptoms = JSON.parse(localStorage.getItem('tirzSymptoms') || '[]');
+    const oldName = localStorage.getItem('tirzName') || '';
+    const oldNextDose = localStorage.getItem('tirzNextDose') || '';
+    const oldAch = JSON.parse(localStorage.getItem('tirzAch') || '[]');
+    const oldVial = parseInt(localStorage.getItem('tirzVial') || '0');
+
+    if (!oldApps.length && !oldWeights.length && !oldName) return false; // nothing to migrate
+
+    const doc = userDoc();
+    if (!doc) return false;
+
+    // Save user profile
+    await doc.set({ name: oldName }, { merge: true });
+
+    // Save goal
+    if (oldGoal) await doc.set({ goal: oldGoal }, { merge: true });
+
+    // Save next dose
+    if (oldNextDose) await doc.set({ nextDose: oldNextDose }, { merge: true });
+
+    // Save achievements
+    if (oldAch.length) await doc.set({ achievements: oldAch }, { merge: true });
+
+    // Save vial
+    if (oldVial) await doc.set({ vial: oldVial }, { merge: true });
+
+    // Save apps
+    if (oldApps.length) {
+      const batch = db.batch();
+      oldApps.forEach(function(a) {
+        const ref = db.collection('users').doc(auth.currentUser.uid).collection('apps').doc(String(a.id));
+        batch.set(ref, { ...a, __order: new Date(a.datetime).getTime() });
+      });
+      await batch.commit();
+    }
+
+    // Save weights
+    if (oldWeights.length) {
+      const batch = db.batch();
+      oldWeights.forEach(function(w) {
+        const ref = db.collection('users').doc(auth.currentUser.uid).collection('weights').doc(w.date);
+        batch.set(ref, { ...w, __order: new Date(w.date + 'T12:00:00').getTime() });
+      });
+      await batch.commit();
+    }
+
+    // Save symptoms
+    if (oldSymptoms.length) {
+      const batch = db.batch();
+      oldSymptoms.forEach(function(s) {
+        const ref = db.collection('users').doc(auth.currentUser.uid).collection('symptoms').doc(s.date);
+        batch.set(ref, { ...s, __order: new Date(s.date + 'T12:00:00').getTime() });
+      });
+      await batch.commit();
+    }
+
+    // Clear localStorage after successful migration
+    localStorage.removeItem('tirzApps');
+    localStorage.removeItem('tirzWeights');
+    localStorage.removeItem('tirzGoal');
+    localStorage.removeItem('tirzSymptoms');
+    localStorage.removeItem('tirzNextDose');
+    localStorage.removeItem('tirzAch');
+    localStorage.removeItem('tirzVial');
+
+    return true;
+  } catch(e) {
+    console.error('Migration error:', e);
+    return false;
+  }
+}
+
 // ======= PLATFORM & INSTALL =======
 const isAndroid = /Android/i.test(navigator.userAgent);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -946,9 +1113,8 @@ function initOnboarding() {
     document.getElementById('onboardingScreen').classList.add('hidden');
     return true;
   }
-  // Se já tem PIN configurado, a pessoa já usou o app — pula onboarding
-  const hasPin = localStorage.getItem(STORED_PIN_KEY);
-  if (hasPin) {
+  // Se já tem sessão Firebase ativa, pula onboarding
+  if (auth.currentUser) {
     document.getElementById('onboardingScreen').classList.add('hidden');
     return true;
   }
@@ -1019,95 +1185,211 @@ function onbFinish() {
   initLogin();
 }
 
-// ======= LOGIN =======
-const STORED_PIN_KEY = 'tirzPin';
-const STORED_NAME_KEY = 'tirzName';
+// ======= LOGIN (Firebase Auth) =======
+let loginMode = 'signin'; // 'signin' or 'signup'
+let loginStepSignup = 1; // 1=name, 2=email, 3=password, 4=confirm
 
 function initLogin() {
-  const pin = localStorage.getItem(STORED_PIN_KEY);
-  if (!pin) {
-    // First time — step 1: name
+  // Se já tem sessão Firebase, carrega dados direto
+  if (auth.currentUser) {
+    loadAndUnlock();
+    return;
+  }
+  // Mostra tela de login
+  document.getElementById('loginNameField').style.display = 'none';
+  document.getElementById('loginPinSetup').style.display = 'none';
+  document.getElementById('loginPinConfirm').style.display = 'none';
+  document.getElementById('loginPinEnter').style.display = 'none';
+  showLoginTab('signin');
+}
+
+function showLoginTab(mode) {
+  loginMode = mode;
+  loginStepSignup = 1;
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginNameField').style.display = 'none';
+  document.getElementById('loginPinSetup').style.display = 'none';
+  document.getElementById('loginPinConfirm').style.display = 'none';
+  document.getElementById('loginPinEnter').style.display = 'none';
+
+  if (mode === 'signup') {
     document.getElementById('loginNameField').style.display = 'block';
     document.getElementById('loginBtn').textContent = 'Próximo →';
-    document.getElementById('loginHint').textContent = 'Seus dados ficam salvos só no seu aparelho.';
+    document.getElementById('loginHint').textContent = 'Crie sua conta para acessar o app';
+    document.getElementById('loginSub').textContent = 'Seu diário de tratamento sempre com você';
+    document.getElementById('inputName').value = '';
     setTimeout(() => document.getElementById('inputName').focus(), 300);
   } else {
-    // Returning user
-    const name = localStorage.getItem(STORED_NAME_KEY) || '';
-    document.getElementById('loginPinEnter').style.display = 'block';
+    showLoginEmailPassword();
     document.getElementById('loginBtn').textContent = 'Entrar';
-    document.getElementById('loginHint').innerHTML = '<a onclick="resetAll()" style="cursor:pointer;color:var(--rose)">Esqueci minha senha — redefinir só o PIN</a>';
-    if (name) {
-      document.getElementById('loginWelcomeName').textContent = 'Olá, ' + name + ' 👋';
-    }
-    setTimeout(() => document.getElementById('pinEnter').focus(), 300);
+    document.getElementById('loginHint').innerHTML = '<a onclick="showLoginTab(\'signup\')" style="cursor:pointer;color:var(--rose)">Criar uma conta</a>';
+    document.getElementById('loginSub').textContent = 'Bem-vinda de volta! Entre com sua conta';
   }
 }
 
-let pinSetupStep = 1; // 1=name, 2=create, 3=confirm
-let tempPin = '';
+function showLoginEmailPassword() {
+  document.getElementById('loginPinEnter').style.display = 'block';
+  // Reuse the PIN fields as email + password fields
+  document.getElementById('pinEnter').placeholder = 'seu@email.com';
+  document.getElementById('pinEnter').type = 'email';
+  document.getElementById('pinEnter').style.letterSpacing = '0';
+  document.getElementById('pinEnter').style.textAlign = 'left';
+  document.getElementById('pinEnter').setAttribute('maxlength', '100');
+  document.getElementById('pinEnter').value = '';
+  // Show the label and input
+  const label = document.querySelector('#loginPinEnter label');
+  if (label) label.textContent = 'Email';
+  // Add password field after email
+  if (!document.getElementById('pinEnterPass')) {
+    const passField = document.createElement('div');
+    passField.className = 'login-field';
+    passField.innerHTML = '<label>Senha</label><input type="password" id="pinEnterPass" placeholder="Sua senha" style="letter-spacing:0;text-align:left" maxlength="100">';
+    passField.querySelector('input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('pinEnter').parentElement.parentElement.insertBefore(passField,
+      document.getElementById('pinEnter').parentElement.nextSibling);
+  }
+  const passEl = document.getElementById('pinEnterPass');
+  if (passEl) { passEl.value = ''; passEl.parentElement.style.display = 'block'; }
+  setTimeout(() => document.getElementById('pinEnter').focus(), 300);
+}
 
-function onPinSetupInput(el) {
-  if (el.value.length === 4) document.getElementById('loginBtn').focus();
+function showLoginPasswordOnly() {
+  document.getElementById('loginPinSetup').style.display = 'block';
+  document.getElementById('pinSetup').placeholder = 'Sua senha';
+  document.getElementById('pinSetup').type = 'password';
+  document.getElementById('pinSetup').style.letterSpacing = '0';
+  document.getElementById('pinSetup').style.textAlign = 'left';
+  document.getElementById('pinSetup').setAttribute('maxlength', '100');
+  document.getElementById('pinSetup').value = '';
+  const label = document.querySelector('#loginPinSetup label');
+  if (label) label.textContent = 'Criar senha (mínimo 6 caracteres)';
+  setTimeout(() => document.getElementById('pinSetup').focus(), 100);
 }
-function onPinConfirmInput(el) {
-  if (el.value.length === 4) handleLogin();
-}
-function onPinEnterInput(el) {
-  document.getElementById('loginError').textContent = '';
-  if (el.value.length === 4) handleLogin();
+
+function showLoginConfirmPassword() {
+  document.getElementById('loginPinConfirm').style.display = 'block';
+  document.getElementById('pinConfirm').placeholder = 'Confirme sua senha';
+  document.getElementById('pinConfirm').type = 'password';
+  document.getElementById('pinConfirm').style.letterSpacing = '0';
+  document.getElementById('pinConfirm').style.textAlign = 'left';
+  document.getElementById('pinConfirm').setAttribute('maxlength', '100');
+  document.getElementById('pinConfirm').value = '';
+  const label = document.querySelector('#loginPinConfirm label');
+  if (label) label.textContent = 'Confirmar senha';
+  setTimeout(() => document.getElementById('pinConfirm').focus(), 100);
 }
 
 function handleLogin() {
-  const pin = localStorage.getItem(STORED_PIN_KEY);
   document.getElementById('loginError').textContent = '';
 
-  if (!pin) {
-    if (pinSetupStep === 1) {
-      // Validate name
+  if (loginMode === 'signup') {
+    // Step 1: name
+    if (loginStepSignup === 1) {
       const name = document.getElementById('inputName').value.trim();
       if (!name) { document.getElementById('loginError').textContent = 'Por favor informe seu nome'; return; }
-      localStorage.setItem(STORED_NAME_KEY, name);
-      pinSetupStep = 2;
+      window._signupName = name;
+      loginStepSignup = 2;
       document.getElementById('loginNameField').style.display = 'none';
-      document.getElementById('loginPinSetup').style.display = 'block';
+      showLoginEmailPassword();
+      document.getElementById('pinEnter').placeholder = 'seu@email.com';
+      document.getElementById('pinEnter').type = 'email';
       document.getElementById('loginBtn').textContent = 'Próximo →';
-      document.getElementById('loginHint').textContent = 'Crie uma senha de 4 números para proteger seus dados.';
-      setTimeout(() => document.getElementById('pinSetup').focus(), 100);
-
-    } else if (pinSetupStep === 2) {
-      const v = document.getElementById('pinSetup').value;
-      if (v.length !== 4 || !/^\d+$/.test(v)) {
-        document.getElementById('loginError').textContent = 'Use exatamente 4 números'; return;
-      }
-      tempPin = v;
-      pinSetupStep = 3;
+      document.getElementById('loginHint').textContent = 'Use um email que você acesse';
+      const label = document.querySelector('#loginPinEnter label');
+      if (label) label.textContent = 'Email';
+      // Hide password for now
+      const passField = document.getElementById('pinEnterPass');
+      if (passField) passField.parentElement.style.display = 'none';
+      return;
+    }
+    // Step 2: email
+    if (loginStepSignup === 2) {
+      const email = document.getElementById('pinEnter').value.trim();
+      if (!email || !email.includes('@')) { document.getElementById('loginError').textContent = 'Informe um email válido'; return; }
+      window._signupEmail = email;
+      loginStepSignup = 3;
+      document.getElementById('loginPinEnter').style.display = 'none';
+      showLoginPasswordOnly();
+      document.getElementById('loginBtn').textContent = 'Próximo →';
+      document.getElementById('loginHint').textContent = 'Use uma senha com no mínimo 6 caracteres';
+      return;
+    }
+    // Step 3: password
+    if (loginStepSignup === 3) {
+      const pass = document.getElementById('pinSetup').value;
+      if (pass.length < 6) { document.getElementById('loginError').textContent = 'A senha precisa ter pelo menos 6 caracteres'; return; }
+      window._signupPass = pass;
+      loginStepSignup = 4;
       document.getElementById('loginPinSetup').style.display = 'none';
-      document.getElementById('loginPinConfirm').style.display = 'block';
-      document.getElementById('loginBtn').textContent = 'Confirmar senha';
-      document.getElementById('loginHint').textContent = 'Digite a senha novamente para confirmar.';
-      setTimeout(() => document.getElementById('pinConfirm').focus(), 100);
-
-    } else {
-      const v = document.getElementById('pinConfirm').value;
-      if (v !== tempPin) {
-        document.getElementById('loginError').textContent = 'Senhas não conferem. Tente novamente.';
-        document.getElementById('pinConfirm').value = '';
-        return;
-      }
-      localStorage.setItem(STORED_PIN_KEY, tempPin);
-      unlockApp();
+      showLoginConfirmPassword();
+      document.getElementById('loginBtn').textContent = 'Criar conta ✨';
+      document.getElementById('loginHint').textContent = 'Confirme a senha que você acabou de criar';
+      return;
     }
-  } else {
-    const v = document.getElementById('pinEnter').value;
-    if (v === pin) {
-      unlockApp();
-    } else {
-      document.getElementById('loginError').textContent = 'Senha incorreta';
-      document.getElementById('pinEnter').value = '';
-      setTimeout(() => document.getElementById('pinEnter').focus(), 100);
+    // Step 4: confirm & create account
+    const confirm = document.getElementById('pinConfirm').value;
+    if (confirm !== window._signupPass) {
+      document.getElementById('loginError').textContent = 'As senhas não conferem. Tente novamente.';
+      document.getElementById('pinConfirm').value = '';
+      return;
     }
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginBtn').textContent = 'Criando...';
+    auth.createUserWithEmailAndPassword(window._signupEmail, window._signupPass)
+      .then(function(userCred) {
+        // Save name
+        saveUserName(window._signupName).then(function() {
+          // Check for localStorage migration
+          migrateFromLocalStorage().then(function(migrated) {
+            loadAndUnlock();
+          });
+        });
+      })
+      .catch(function(error) {
+        document.getElementById('loginError').textContent = error.message;
+        document.getElementById('loginBtn').textContent = 'Criar conta ✨';
+      });
+    return;
   }
+
+  // SIGN IN mode
+  const email = document.getElementById('pinEnter').value.trim();
+  const passEl = document.getElementById('pinEnterPass');
+  const password = passEl ? passEl.value : '';
+  if (!email || !password) {
+    document.getElementById('loginError').textContent = 'Informe email e senha';
+    return;
+  }
+  document.getElementById('loginBtn').textContent = 'Entrando...';
+  auth.signInWithEmailAndPassword(email, password)
+    .then(function() {
+      loadAndUnlock();
+    })
+    .catch(function(error) {
+      document.getElementById('loginError').textContent = error.message;
+      document.getElementById('loginBtn').textContent = 'Entrar';
+    });
+}
+
+async function loadAndUnlock() {
+  await loadUserData();
+  // Migrate localStorage data if present
+  if (localStorage.getItem('tirzApps') || localStorage.getItem('tirzWeights') || localStorage.getItem('tirzGoal')) {
+    await migrateFromLocalStorage();
+  }
+  unlockApp();
+}
+
+function resetAll() {
+  if (!confirm('Isso vai apagar seus dados de acesso. Seus dados de saúde continuam salvos no Firebase. Continuar?')) return;
+  auth.signOut().then(function() {
+    // Clear cache
+    _appsCache = []; _weightsCache = []; _goalCache = null; _symptomsCache = [];
+    _nextDoseCache = ''; _achievementsCache = []; _vialCache = 0; _userNameCache = '';
+    location.reload();
+  });
 }
 
 function unlockApp() {
@@ -1119,7 +1401,7 @@ function unlockApp() {
     document.body.scrollTop = 0;
   });
   // Show name in header
-  const name = localStorage.getItem(STORED_NAME_KEY) || '';
+  const name = _userNameCache || localStorage.getItem('tirzName') || '';
   if (name) {
     const titleEl = document.querySelector('.app-title');
     if (titleEl) titleEl.innerHTML = `minha <span>tirzepatida</span> <small style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-soft);font-style:normal;font-weight:500">· ${name}</small>`;
@@ -1148,23 +1430,87 @@ function buildDoseChips() {
   highlightDoseChip();
 }
 
-// ======= STATE =======
+// ======= STATE & DATA CACHE =======
 let currentDose = 3.5;
 let currentWeight = 70.0;
 let selectedZone = '';
 let notifScheduled = null;
 
-function getApps() { return JSON.parse(localStorage.getItem('tirzApps') || '[]'); }
-function saveApps(a) { localStorage.setItem('tirzApps', JSON.stringify(a)); }
-function getWeights() { return JSON.parse(localStorage.getItem('tirzWeights') || '[]'); }
-function saveWeights(w) { localStorage.setItem('tirzWeights', JSON.stringify(w)); }
-function getGoal() { return JSON.parse(localStorage.getItem('tirzGoal') || 'null'); }
-function saveGoalData(g) { localStorage.setItem('tirzGoal', JSON.stringify(g)); }
+// In-memory cache (loaded from Firestore at init, synced on save)
+let _appsCache = [];
+let _weightsCache = [];
+let _goalCache = null;
+let _symptomsCache = [];
+let _nextDoseCache = '';
+let _achievementsCache = [];
+let _vialCache = 0;
+let _userNameCache = '';
+
+// Synchronous getters (read from memory cache)
+function getApps() { return _appsCache; }
+function getWeights() { return _weightsCache; }
+function getGoal() { return _goalCache; }
+function getSymptoms() { return _symptomsCache; }
+function getAchievements() { return _achievementsCache; }
+
+// Async savers (write to Firestore + update cache)
+async function saveApps(a) {
+  _appsCache = a;
+  try { await fbSet('appsJson', JSON.stringify(a)); } catch(e) { console.error(e); }
+}
+async function saveWeights(w) {
+  _weightsCache = w;
+  try { await fbSet('weightsJson', JSON.stringify(w)); } catch(e) { console.error(e); }
+}
+async function saveGoalData(g) {
+  _goalCache = g;
+  try { await fbSet('goal', JSON.stringify(g)); } catch(e) { console.error(e); }
+}
+async function saveSymptomData(s) {
+  _symptomsCache = s;
+  try { await fbSet('symptomsJson', JSON.stringify(s)); } catch(e) { console.error(e); }
+}
+async function saveAchievements(a) {
+  _achievementsCache = a;
+  try { await fbSet('achievements', JSON.stringify(a)); } catch(e) { console.error(e); }
+}
+async function saveUserName(n) {
+  _userNameCache = n;
+  try { await fbSet('name', n); } catch(e) { console.error(e); }
+}
+async function saveNextDose(d) {
+  _nextDoseCache = d;
+  try { await fbSet('nextDose', d); } catch(e) { console.error(e); }
+}
+async function saveVial(v) {
+  _vialCache = v;
+  try { await fbSet('vial', v); } catch(e) { console.error(e); }
+}
+
+// Load ALL user data from Firestore into memory cache
+async function loadUserData() {
+  if (!auth.currentUser) return;
+  try {
+    const doc = userDoc();
+    if (!doc) return;
+    const snap = await doc.get();
+    if (!snap.exists) return;
+    const d = snap.data();
+    _userNameCache = d.name || '';
+    _nextDoseCache = d.nextDose || '';
+    _vialCache = d.vial || 0;
+    _achievementsCache = (typeof d.achievements === 'string' ? JSON.parse(d.achievements) : d.achievements) || [];
+    _goalCache = (typeof d.goal === 'string' ? JSON.parse(d.goal) : d.goal) || null;
+    _appsCache = (typeof d.appsJson === 'string' ? JSON.parse(d.appsJson) : d.appsJson) || [];
+    _weightsCache = (typeof d.weightsJson === 'string' ? JSON.parse(d.weightsJson) : d.weightsJson) || [];
+    _symptomsCache = (typeof d.symptomsJson === 'string' ? JSON.parse(d.symptomsJson) : d.symptomsJson) || [];
+  } catch(e) { console.error('loadUserData:', e); }
+}
 
 // ======= INIT =======
 window.onload = () => {
   // Force reload if cached version is outdated (PWA cache-bust)
-  const APP_VERSION = '15';
+  const APP_VERSION = '16';
   const cachedVer = localStorage.getItem('tirzAppVersion');
   if (cachedVer && cachedVer !== APP_VERSION) {
     localStorage.setItem('tirzAppVersion', APP_VERSION);
@@ -1175,9 +1521,18 @@ window.onload = () => {
   }
   localStorage.setItem('tirzAppVersion', APP_VERSION);
   checkInstallScreen();
-  // Onboarding só aparece no PWA; se pular, vai direto pro login
-  const skip = initOnboarding();
-  if (skip) initLogin();
+
+  // Wait for Firebase Auth to initialize, then route
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      // User is signed in → load data and unlock
+      loadAndUnlock();
+    } else {
+      // No session → show onboarding or login
+      const skip = initOnboarding();
+      if (skip) initLogin();
+    }
+  });
 };
 
 function initApp() {
@@ -1201,6 +1556,8 @@ function initApp() {
   updateSummary();
   updateCalendarTips();
   updateUIConverter();
+  // Restore vial from cache
+  if (_vialCache) { currentVial = _vialCache; updateUIConverter(); }
   setTimeout(() => { drawWeightChart(); updateHeaderDose(); updateSummary(); }, 100);
   // Notifications
   document.addEventListener('visibilitychange', () => {
@@ -1263,7 +1620,9 @@ let currentVial = parseInt(localStorage.getItem('tirzVial') || '0');
 
 function setVial(mg) {
   currentVial = mg;
+  // Keep localStorage for migration + fallback, Firestore is primary
   localStorage.setItem('tirzVial', mg);
+  saveVial(mg);
   updateUIConverter();
 }
 
@@ -1345,8 +1704,6 @@ function toggleChip(el, groupId) {
 }
 
 // ======= SYMPTOMS DIARY =======
-function getSymptoms() { return JSON.parse(localStorage.getItem('tirzSymptoms') || '[]'); }
-function saveSymptomData(s) { localStorage.setItem('tirzSymptoms', JSON.stringify(s)); }
 
 function saveSymptoms() {
   const date = document.getElementById('symptomDate').value;
@@ -1529,13 +1886,14 @@ function openCalendarEvent(dateTimeStr) {
 function scheduleNextDose() {
   const val = document.getElementById('nextDoseDate').value;
   if (!val) { showToast('⚠️ Selecione uma data'); return; }
-  localStorage.setItem('tirzNextDose', val);
+  localStorage.setItem('tirzNextDose', val); // fallback
+  saveNextDose(val);
   updateNextDoseBadge();
   openCalendarEvent(val);
 }
 
 function showNextDoseInfo() {
-  const next = localStorage.getItem('tirzNextDose');
+  const next = _nextDoseCache || localStorage.getItem('tirzNextDose');
   if (!next) { showToast('Nenhuma dose agendada ainda'); return; }
   const nextDate = next.slice(0,10);
   const todayStr = localDateStr();
@@ -1557,7 +1915,7 @@ function localDatetimeStr(d) {
 }
 
 function updateNextDoseBadge() {
-  const next = localStorage.getItem('tirzNextDose');
+  const next = _nextDoseCache || localStorage.getItem('tirzNextDose');
   const badge = document.getElementById('nextDoseBadge');
   const infoDiv = document.getElementById('nextDoseInfo');
   const infoText = document.getElementById('nextDoseInfoText');
@@ -2046,6 +2404,14 @@ function clearData() {
     return;
   }
   window._clearStep=false;
+  // Clear from cache
+  _appsCache = []; _weightsCache = []; _goalCache = null; _symptomsCache = [];
+  // Clear from Firestore
+  const doc = userDoc();
+  if (doc) {
+    doc.set({ appsJson: '', weightsJson: '', goal: '', symptomsJson: '', nextDose: '' }, { merge: true });
+  }
+  // Clear legacy localStorage too
   ['tirzApps','tirzWeights','tirzNextDose','tirzGoal','tirzSymptoms'].forEach(k=>localStorage.removeItem(k));
   showToast('🗑 Dados apagados');
   updateHeaderDose(); updateNextDoseBadge(); updateSummary(); updateGoalProgress();
@@ -2259,8 +2625,7 @@ function showToast(msg, dur) {
   setTimeout(()=>t.classList.remove('show'), dur || 2500);
 }
 
-function getAchievements() { return JSON.parse(localStorage.getItem('tirzAch') || '[]'); }
-function saveAchievements(a) { localStorage.setItem('tirzAch', JSON.stringify(a)); }
+function getAchievements() { return _achievementsCache; }
 
 const ACHIEVEMENTS = [
   { id: 'first_dose', icon: '💉', name: 'Primeira dose', desc: 'Registrou sua primeira aplicação' },

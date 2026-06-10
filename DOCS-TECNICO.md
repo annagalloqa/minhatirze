@@ -2,11 +2,11 @@
 
 ## Visão Geral
 
-**Minha Tirze** é uma Progressive Web App (PWA) de arquivo único (single-file) para acompanhamento de tratamento com tirzepatida. Desenvolvida em HTML/CSS/JavaScript vanilla, sem frameworks ou dependências externas (exceto Google Fonts). Todos os dados são armazenados localmente no dispositivo do usuário via `localStorage`.
+**Minha Tirze** é uma Progressive Web App (PWA) para acompanhamento de tratamento com tirzepatida. Em migração de localStorage para Firebase (Firestore + Auth).
 
 - **URL:** https://annagalloqa.github.io/minhatirze/
 - **Repositório:** github.com/annagalloqa/minhatirze
-- **Arquivo principal:** `index.html` (~2.300 linhas)
+- **Arquivo principal:** `index.html` (~2.420 linhas atualmente)
 - **Plataformas:** iOS (Safari/PWA) e Android (Chrome/Brave)
 
 ---
@@ -18,54 +18,82 @@ index.html (arquivo único)
 ├── <head>
 │   ├── Meta tags PWA (apple-mobile-web-app, manifest, theme-color)
 │   ├── Google Fonts (DM Sans, DM Serif Display)
+│   ├── Firebase SDK (Auth + Firestore) ← NOVO
 │   └── <style> (~500 linhas CSS)
 ├── <body>
 │   ├── #onboardingScreen      — 3 slides de boas-vindas (só PWA)
 │   ├── #installScreen         — Instruções de instalação (iOS/Android)
-│   ├── #loginScreen           — Nome + PIN de 4 dígitos
-│   ├── .header                — Barra superior fixa (dose + próx. dose)
-│   ├── .bottom-nav            — 5 abas (Registrar, Sintomas, Histórico, Peso, Resumo)
-│   ├── .page#page-registrar   — Registrar aplicação
-│   ├── .page#page-sintomas    — Diário de sintomas
-│   ├── .page#page-historico   — Histórico de aplicações
-│   ├── .page#page-peso        — Meta + registro de peso + gráfico
-│   ├── .page#page-resumo      — Estatísticas, IMC, proteína, conquistas, share
-│   ├── #shareModal            — Modal de compartilhamento de progresso
+│   ├── #loginScreen           — Email + Senha (Firebase Auth) ← MUDOU
+│   ├── .header                — Barra superior fixa
+│   ├── .bottom-nav            — 5 abas
+│   ├── .page#page-*           — Páginas do app
+│   ├── #shareModal            — Modal de compartilhamento
 │   └── .toast                 — Notificações temporárias
-└── <script> (~1.800 linhas JavaScript)
+└── <script> (~2.000 linhas JavaScript)
 ```
 
 ---
 
 ## Stack Tecnológica
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Estrutura | HTML5 semântico |
-| Estilo | CSS3 (variáveis, flexbox, animações, safe-area) |
-| Lógica | JavaScript ES6+ vanilla |
-| Armazenamento | `localStorage` (8 chaves) |
-| Gráficos | Canvas 2D API (gráfico de peso + share card) |
-| Fontes | Google Fonts: DM Sans (UI) + DM Serif Display (títulos) |
-| PWA | Manifest JSON, Service Worker (implícito via GH Pages) |
-| Deploy | GitHub Pages (push na branch `main`) |
+| Camada | Antes | Depois |
+|--------|-------|--------|
+| Estrutura | HTML5 | HTML5 |
+| Estilo | CSS3 | CSS3 |
+| Lógica | JavaScript ES6+ | JavaScript ES6+ |
+| **Armazenamento** | **localStorage** | **Firestore (Firebase)** |
+| **Autenticação** | **PIN 4 dígitos** | **Firebase Auth (email/senha)** |
+| Gráficos | Canvas 2D | Canvas 2D |
+| Fontes | Google Fonts | Google Fonts |
+| PWA | Manifest + SW | Manifest + SW |
+| Deploy | GitHub Pages | GitHub Pages |
+| **Backend** | **nenhum** | **Firebase (serverless)** |
 
 ---
 
-## Armazenamento (localStorage)
+## Firebase — Plano de Migração
 
-| Chave | Conteúdo | Formato |
-|-------|---------|---------|
-| `tirzName` | Nome do usuário | string |
-| `tirzPin` | PIN de 4 dígitos | string |
-| `tirzApps` | Aplicações registradas | `[{id, datetime, dose, site, notes}]` |
-| `tirzWeights` | Pesos registrados | `[{date, kg}]` |
-| `tirzGoal` | Meta de peso | `{start, current, target, startDate, height}` |
-| `tirzSymptoms` | Sintomas diários | `[{date, chips, notes}]` |
-| `tirzNextDose` | Data da próxima dose | string ISO |
-| `tirzAch` | Conquistas desbloqueadas | `['first_dose', ...]` |
-| `tirzVial` | Concentração do frasco | number (5, 10 ou 15) |
-| `tirzAppVersion` | Versão do app (cache bust) | string |
+### Fase 1A: Setup do Projeto Firebase 🔥
+- [x] Criar arquivo CREDENCIAIS.md com acessos
+- [ ] Criar projeto no Firebase Console (`minha-tirze`)
+- [ ] Ativar Authentication (Email/Senha)
+- [ ] Ativar Firestore Database
+- [ ] Registrar App Web → obter `firebaseConfig`
+- [ ] Adicionar Firebase SDK no `index.html`
+
+### Fase 1B: Substituir localStorage → Firestore
+Cada chave do localStorage vira uma **coleção** no Firestore:
+
+| localStorage (ANTES) | Firestore (DEPOIS) | Estrutura |
+|----------------------|-------------------|-----------|
+| `tirzName` | `users/{uid}` | `{name, email, createdAt}` |
+| `tirzPin` | ❌ REMOVIDO | Firebase Auth gerencia |
+| `tirzApps` | `users/{uid}/apps/{id}` | `{datetime, dose, site, notes}` |
+| `tirzWeights` | `users/{uid}/weights/{id}` | `{date, kg}` |
+| `tirzGoal` | `users/{uid}/goal` | `{start, current, target, startDate, height}` |
+| `tirzSymptoms` | `users/{uid}/symptoms/{id}` | `{date, chips, notes}` |
+| `tirzNextDose` | `users/{uid}` | `{nextDose}` |
+| `tirzAch` | `users/{uid}` | `{achievements: [...]}` |
+| `tirzVial` | `users/{uid}` | `{vial}` |
+| `tirzAppVersion` | `users/{uid}` | `{appVersion}` |
+
+### Fase 1C: Login (Firebase Auth)
+- Email + senha (Firebase Auth)
+- Onboarding adaptado: "Crie sua conta" em vez de "Crie seu PIN"
+- Fluxo: nome → email → senha → confirmar senha → criar conta
+- Login: email + senha
+- "Esqueci minha senha" → Firebase manda email de reset
+
+### Fase 1D: Migração de dados existentes
+- Quando usuário faz login pela primeira vez:
+  1. Detecta se tem dados no localStorage
+  2. Oferece "Importar dados do app antigo"
+  3. Sobe tudo pro Firestore
+  4. Apaga localStorage (limpa)
+
+### Fase 1E: Offline (opcional)
+- Firestore tem suporte offline nativo
+- Dados são salvos localmente e sincronizam quando online
 
 ---
 
@@ -86,22 +114,23 @@ index.html (arquivo único)
 
 ---
 
-## Fluxo de Inicialização
+## Fluxo de Inicialização (NOVO — Firebase)
 
 ```
 window.onload
   ├── Cache bust (APP_VERSION)
+  ├── Inicializa Firebase
   ├── checkInstallScreen()
   │     ├── isStandalone? → não mostra nada (PWA)
   │     └── !isStandalone? → mostra #installScreen
   ├── initOnboarding()
-  │     ├── !isStandalone? → pula (navegador)
-  │     ├── hasPin? → pula (já usou)
-  │     └── !hasPin && isStandalone → mostra #onboardingScreen
+  │     ├── !isStandalone? → pula
+  │     ├── firebase.auth().currentUser? → pula (já logado)
+  │     └── sem sessão && isStandalone → mostra #onboardingScreen
   └── initLogin() ou onbFinish()
-        ├── !hasPin → fluxo de criação (nome → PIN → confirmar)
-        ├── hasPin → fluxo de entrada (digitar PIN)
-        └── unlockApp() → initApp()
+        ├── sem conta → fluxo de criação (nome → email → senha)
+        ├── com conta → fluxo de entrada (email + senha)
+        └── onAuthStateChanged() → unlockApp()
 ```
 
 ---
@@ -114,91 +143,27 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isStandalone = navigator.standalone || matchMedia('(display-mode: standalone)');
 ```
 
-Comportamentos específicos por plataforma:
-- **iOS PWA:** Blob URL + `<a download>` para evento de calendário
-- **Android:** Google Calendar link em vez de ICS
-- **Share Card:** `navigator.share()` com fallback para download via Blob URL
-
 ---
 
-## Funcionalidades Técnicas
+## Funcionalidades Técnicas (mantidas)
 
-### 1. Onboarding
-- 3 slides com `scroll-snap-type: x mandatory`
-- Swipe detection via `touchstart`/`touchend`
-- Indicadores de slide (dots)
-- Só aparece no PWA, primeira vez
-
-### 2. PIN de Segurança
-- 4 dígitos numéricos
-- Fluxo: nome → criar PIN → confirmar PIN → entrar
-- Redefinição de PIN preserva dados
-
-### 3. Registro de Aplicação
-- DateTime picker nativo
-- Dose picker com +/− (0.5mg a 15mg)
-- Dose chips de acesso rápido
-- Conversor mg → UI (unidades na seringa)
-- Mapa corporal SVG com 8 zonas clicáveis
-- Agenda próxima dose (+7 dias) com integração calendário
-
-### 4. Calendário (ICS / Google Calendar)
-- Gera arquivo `.ics` (RFC 5545) com `VALARM`
-- iOS: Blob URL + `<a download>` (abre app Calendário nativo)
-- Android: Google Calendar URL
-
-### 5. Diário de Sintomas
-- 10 chips de sintomas + toggle
-- Notas textuais
-- Histórico com swipe-to-delete
-
-### 6. Peso e Meta
-- Meta: peso inicial, atual, alvo, data de início, altura
-- Registro de peso com date picker + stepper
-- Gráfico Canvas 2D com linha, área, dots e linha de meta
-- Barra de progresso da meta
-- Swipe-to-delete nos registros
-
-### 7. Resumo (Dashboard)
-- Cards de estatísticas (total apps, dose atual, kg perdidos)
-- Progressão de dose (barra + chips)
-- IMC + recomendação de proteína
-- Sistema de conquistas (8 achievements)
-- Share Card (Canvas → Blob URL → share nativo)
-- Rodízio inteligente de zonas
-- Exportação de dados (texto)
-- Limpeza de dados (confirmação)
-
-### 8. Share Card
-- Canvas 600×800 com gradiente, métricas, frase motivacional
-- Blob URL para compatibilidade com `download` attribute
-- `navigator.share()` com `files` para compartilhamento nativo
-- Modal overlay com botões: Compartilhar, Salvar, Fechar
-
-### 9. Swipe-to-Delete
-- Touch events (touchstart/move/end)
-- Arrasta → revela ícone 🗑 → clica para deletar
-- Fecha ao tocar fora
-- Presente em: Histórico, Sintomas, Peso
-
-### 10. Conquistas
-- 8 conquistas: primeira dose, 4 semanas, 12 semanas, -5kg, -10kg, meta, 7 diários, rodízio completo
-- Toast especial ao desbloquear (3.5s)
-- Lista com ícones 🔒/🏆 no Resumo
-
-### 11. PWA / Instalação
-- Manifest JSON com ícone e cores
-- `beforeinstallprompt` para instalação nativa Android
-- Tela de instruções com abas iOS/Android
-- Cache bust via `APP_VERSION` no localStorage
+1. Onboarding — 3 slides (adaptado pra Firebase)
+2. Login — Email + Senha (Firebase Auth) ← MUDOU
+3. Registro de Aplicação — mantido (Firestore)
+4. Calendário ICS/Google Calendar — mantido
+5. Diário de Sintomas — mantido (Firestore)
+6. Peso e Meta — mantido (Firestore)
+7. Resumo (Dashboard) — mantido (Firestore)
+8. Share Card — mantido
+9. Swipe-to-Delete — mantido
+10. Conquistas — mantido (Firestore)
+11. PWA / Instalação — mantido
 
 ---
 
 ## Versionamento
 
-Versão atual: `15` (APP_VERSION no localStorage)
-
-O sistema de cache bust força reload quando a versão muda, garantindo que PWAs instaladas recebam atualizações.
+Versão atual: `16` ← Firebase migration
 
 ---
 
@@ -207,8 +172,14 @@ O sistema de cache bust força reload quando a versão muda, garantindo que PWAs
 ```bash
 cd /Users/annacarolina/Downloads/tirze-app
 git add index.html
-git commit -m "descrição"
+git commit -m "firebase: <descrição>"
 GIT_ASKPASS=/tmp/git_askpass.sh git push origin main
 ```
 
-GitHub Pages detecta o push na branch `main` e publica automaticamente em ~1-2 minutos.
+---
+
+## Documentos relacionados
+
+- **CREDENCIAIS.md** — Todas as contas, tokens e acessos
+- **GUIA-RESUMIDO.md** — Guia rápido do usuário
+- **GUIA-COMPLETO.md** — Manual completo
