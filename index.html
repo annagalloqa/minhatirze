@@ -277,12 +277,8 @@
     padding-top: 32px; padding-bottom: 32px;
   }
   #loginScreen.hidden { display: none; }
-
-  /* Hide app content while login/onboarding is active */
-  body.login-locked { visibility: hidden; }
-  body.login-locked #installScreen,
-  body.login-locked #loginScreen,
-  body.login-locked #onboardingScreen { visibility: visible; }
+  
+  /* App content — shown after login */
   .login-logo {
     font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--rose);
     margin-bottom: 6px; text-align: center;
@@ -341,7 +337,7 @@
     background: none; border: none; font-family: 'DM Sans', sans-serif; width: 100%; }
 </style>
 </head>
-<body class="login-locked">
+<body>
 
 <!-- ONBOARDING SCREEN -->
 <div id="onboardingScreen">
@@ -481,6 +477,9 @@
       Entrar com Google
     </button>
 </div>
+
+<!-- ===== APP CONTENT (hidden until login) ===== -->
+<div id="appWrap" style="display:none">
 
 <div class="header">
   <div class="header-top">
@@ -1437,7 +1436,7 @@ function handleGoogleResult(result) {
 }
 
 function unlockApp() {
-  document.body.classList.remove('login-locked');
+  document.getElementById('appWrap').style.display = 'block';
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('onboardingScreen').classList.add('hidden');
   // Reset scroll to top after DOM settles
@@ -2834,5 +2833,7 @@ function resetAllSwipes(container) {
 
 window.addEventListener('resize',()=>{ if(document.getElementById('page-peso').classList.contains('active')) drawWeightChart(); });
 </script>
+</div><!-- /appWrap -->
+
 </body>
 </html>
