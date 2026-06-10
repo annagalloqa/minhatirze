@@ -873,7 +873,7 @@ const isStandalone = window.navigator.standalone === true ||
                      window.matchMedia('(display-mode: standalone)').matches;
 
 function checkInstallScreen() {
-  if (isStandalone) return; // PWA já instalado, não mostra
+  if (isStandalone) return;
   const screen = document.getElementById('installScreen');
   screen.classList.remove('hidden');
   if (isIOS) {
@@ -893,9 +893,6 @@ function checkInstallScreen() {
 
 function closeInstallScreen() {
   document.getElementById('installScreen').classList.add('hidden');
-  // Agora sim: onboarding (se necessário) → login
-  const skipLogin = initOnboarding();
-  if (skipLogin) initLogin();
 }
 
 function showInstallTab(platform, btn) {
@@ -947,6 +944,11 @@ let onbSlideIdx = 0;
 const ONB_TOTAL = 3;
 
 function initOnboarding() {
+  // Onboarding só aparece no app instalado (PWA), nunca no navegador
+  if (!isStandalone) {
+    document.getElementById('onboardingScreen').classList.add('hidden');
+    return true;
+  }
   // Se já tem PIN configurado, a pessoa já usou o app — pula onboarding
   const hasPin = localStorage.getItem(STORED_PIN_KEY);
   if (hasPin) {
@@ -1175,15 +1177,10 @@ window.onload = () => {
     }
   }
   localStorage.setItem('tirzAppVersion', APP_VERSION);
-  
-  // Fluxo: instalação → onboarding → login
   checkInstallScreen();
-  // Se for PWA (standalone), checkInstallScreen não mostra nada → vai direto
-  if (isStandalone) {
-    const skipLogin = initOnboarding();
-    if (skipLogin) initLogin();
-  }
-  // Se NÃO for PWA, o installScreen aparece e o fluxo continua no closeInstallScreen()
+  // Onboarding só aparece no PWA; se pular, vai direto pro login
+  const skip = initOnboarding();
+  if (skip) initLogin();
 };
 
 function initApp() {
