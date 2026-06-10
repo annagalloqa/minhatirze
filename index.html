@@ -156,9 +156,11 @@
   .notif-text span { font-size: 12px; color: rgba(255,255,255,0.8); }
 
   /* BOTTOM NAV */
-  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--warm-white); border-top: 1px solid var(--border); display: flex; padding: 10px env(safe-area-inset-right, 0px) calc(env(safe-area-inset-bottom, 0px) + 10px) env(safe-area-inset-left, 0px); box-shadow: 0 -4px 20px rgba(196,113,122,0.1); z-index: 100; }
-  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; cursor: pointer; color: var(--text-soft); font-size: 11px; font-weight: 500; min-width: 0; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--warm-white); border-top: 1px solid var(--border); display: flex; padding: 8px env(safe-area-inset-right, 0px) calc(env(safe-area-inset-bottom, 0px) + 6px) env(safe-area-inset-left, 0px); box-shadow: 0 -4px 20px rgba(196,113,122,0.1); z-index: 100; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px 8px; cursor: pointer; color: var(--text-soft); font-size: 11px; font-weight: 500; min-width: 0; position: relative; transition: color 0.2s; }
   .nav-item.active { color: var(--rose); }
+  /* Barrinha indicadora na aba ativa */
+  .nav-item.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 24px; height: 3px; background: var(--rose); border-radius: 3px; }
   .nav-icon { font-size: 21px; line-height: 1; }
 
   /* TOAST */
@@ -925,11 +927,26 @@ function initApp() {
 
 
 // ======= PAGES =======
+const _lastNavTap = {};
 function showPage(name, navEl) {
+  const now = Date.now();
+  const prev = _lastNavTap[name] || 0;
+  _lastNavTap[name] = now;
+
+  // Duplo toque na mesma aba → scroll ao topo
+  if (now - prev < 400 && document.getElementById('page-' + name).classList.contains('active')) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   if (navEl) navEl.classList.add('active');
+  // Scroll ao topo ao trocar de aba
+  window.scrollTo({ top: 0, behavior: 'instant' });
   if (name === 'historico') renderHistory();
   if (name === 'sintomas') { renderSymptomHistory(); const now=new Date(); document.getElementById('symptomDate').value=now.toISOString().slice(0,10); }
   if (name === 'peso') { drawWeightChart(); renderWeightHistory(); updateGoalProgress(); loadGoalForm(); }
