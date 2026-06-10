@@ -279,10 +279,10 @@
   #loginScreen.hidden { display: none; }
 
   /* Hide app content while login/onboarding is active */
-  body.login-locked .header,
-  body.login-locked .bottom-nav,
-  body.login-locked .page,
-  body.login-locked .toast { display: none !important; }
+  body.login-locked { visibility: hidden; }
+  body.login-locked #installScreen,
+  body.login-locked #loginScreen,
+  body.login-locked #onboardingScreen { visibility: visible; }
   .login-logo {
     font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--rose);
     margin-bottom: 6px; text-align: center;
@@ -1438,15 +1438,7 @@ function handleGoogleResult(result) {
 
 function unlockApp() {
   document.body.classList.remove('login-locked');
-  // Força exibição de tudo (remove qualquer display:none residual)
-  var els = document.querySelectorAll('.header, .bottom-nav, .page');
-  for (var i = 0; i < els.length; i++) { els[i].style.display = ''; }
-  // Garante que a página ativa fique visível
-  var active = document.querySelector('.page.active');
-  if (active) active.style.display = 'block';
-  
   document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('onboardingScreen').classList.add('hidden');
   // Reset scroll to top after DOM settles
   requestAnimationFrame(() => {
