@@ -1548,23 +1548,9 @@ window.onload = () => {
   localStorage.setItem('tirzAppVersion', APP_VERSION);
   checkInstallScreen();
 
-  // Check redirect result FIRST (Google sign-in), then fall back to auth state
-  auth.getRedirectResult().then(function(result) {
-    if (result && result.user) {
-      handleGoogleResult(result);
-      return;
-    }
-    // No redirect — check if already signed in
-    if (auth.currentUser) {
-      loadAndUnlock();
-    } else {
-      var skip = initOnboarding();
-      if (skip) initLogin();
-    }
-  }).catch(function(e) {
-    if (e.code !== 'auth/no-current-user') console.error(e);
-    // Fallback: check auth state
-    if (auth.currentUser) {
+  // onAuthStateChanged é o mais confiável — dispara em qualquer login
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
       loadAndUnlock();
     } else {
       var skip = initOnboarding();
