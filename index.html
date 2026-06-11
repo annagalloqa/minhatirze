@@ -1568,7 +1568,7 @@ async function loadUserData() {
 // ======= INIT =======
 window.onload = () => {
   // Force reload if cached version is outdated (PWA cache-bust)
-  const APP_VERSION = '18';
+  const APP_VERSION = '19';
   const cachedVer = localStorage.getItem('tirzAppVersion');
   if (cachedVer && cachedVer !== APP_VERSION) {
     localStorage.setItem('tirzAppVersion', APP_VERSION);
@@ -1580,44 +1580,41 @@ window.onload = () => {
   localStorage.setItem('tirzAppVersion', APP_VERSION);
   checkInstallScreen();
 
-  // Flag pra saber se getRedirectResult já terminou
-  let _redirectDone = false;
-  
-  auth.getRedirectResult().then(function(result) {
-    _redirectDone = true;
-    if (result && result.user) handleGoogleResult(result);
-  }).catch(function() {
-    _redirectDone = true;
-  });
-
-  auth.onAuthStateChanged(function(user) {
-    if (user) {
+  // authStateReady() espera o Firebase terminar de verificar
+  // o armazenamento local (IndexedDB). Só depois decidimos o que mostrar.
+  // Isso elimina o "flash" de onboarding ao reabrir o app.
+  auth.authStateReady().then(function() {
+    // Estado de autenticação está DEFINITIVO agora
+    
+    // Verifica redirect pendente (Google Sign-In Android)
+    auth.getRedirectResult().then(function(result) {
+      if (result && result.user) handleGoogleResult(result);
+    }).catch(function(){});
+    
+    // Escuta mudanças futuras (login/logout)
+    auth.onAuthStateChanged(function(user) {
+      if (user) {
+        loadAndUnlock();
+      } else {
+        // Usuário fez logout
+        var skip = initOnboarding();
+        if (skip) initLogin();
+      }
+    });
+    
+    // Estado inicial
+    if (auth.currentUser) {
+      // Já tem sessão → abre o app direto
       loadAndUnlock();
     } else {
-      // Se tem cookie de redirect, espera o getRedirectResult terminar
-      // antes de mostrar onboarding (evita flash em Google Sign-In)
-      function checkAndShow() {
-        // Ainda esperando redirect? Cookie presente e getRedirectResult não terminou?
-        var redirectPending = document.cookie.indexOf('fb_redirect=1') !== -1;
-        if (redirectPending && !_redirectDone) {
-          // Espera mais 300ms e tenta de novo
-          setTimeout(checkAndShow, 300);
-          return;
-        }
-        // Cookie de redirect presente mas getRedirectResult já terminou
-        // (Firebase já processou internamente). Limpa cookie e NÃO mostra
-        // onboarding — onAuthStateChanged vai disparar com o usuário.
-        if (redirectPending) {
-          document.cookie = 'fb_redirect=1; path=/; max-age=0';
-          return;
-        }
-        // Sem redirect pendente — fluxo normal
-        if (!auth.currentUser) {
-          var skip = initOnboarding();
-          if (skip) initLogin();
-        }
+      // Sem sessão. Veio de redirect?
+      if (document.cookie.indexOf('fb_redirect=1') !== -1) {
+        document.cookie = 'fb_redirect=1; path=/; max-age=0';
+        // onAuthStateChanged + getRedirectResult vão cuidar
+      } else {
+        var skip = initOnboarding();
+        if (skip) initLogin();
       }
-      setTimeout(checkAndShow, 800);
     }
   });
 };
