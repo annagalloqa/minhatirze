@@ -1402,10 +1402,17 @@ function signInWithGoogle() {
   var provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   
+  // Mostra loading
+  var btn = document.querySelector('#loginScreen button.btn-secondary');
+  var originalText = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = 'Conectando...'; btn.disabled = true; }
+  
   // Tenta popup primeiro (funciona no Android e às vezes no iPhone)
   auth.signInWithPopup(provider).then(function(result) {
     if (result.user) handleGoogleResult(result);
   }).catch(function(error) {
+    // Restaura botão
+    if (btn) { btn.textContent = originalText; btn.disabled = false; }
     // Popup bloqueado ou fechado
     if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
       if (isIOS) {
@@ -1431,9 +1438,9 @@ function handleGoogleResult(result) {
     _userNameCache = user.displayName;
     saveUserName(user.displayName).catch(function(){});
   }
-  // Carrega dados em background e destrava
-  loadUserData().catch(function(){});
+  // Destrava IMEDIATAMENTE, carrega dados em background
   unlockApp();
+  loadUserData().catch(function(){});
 }
 
 function unlockApp() {
