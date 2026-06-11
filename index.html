@@ -365,7 +365,6 @@
   </div>
   <div class="onb-footer">
     <button class="onb-btn" id="onbBtn" onclick="onbNext()">Próximo</button>
-    <button class="onb-skip" onclick="onbSkip()">Pular</button>
   </div>
 </div>
 
@@ -1209,10 +1208,6 @@ function onbNext() {
   }
 }
 
-function onbSkip() {
-  onbFinish();
-}
-
 function onbFinish() {
   document.getElementById('onboardingScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -1421,6 +1416,7 @@ function handleGoogleResult(result) {
 }
 
 function unlockApp() {
+  document.body.classList.remove('login-locked');
   document.getElementById('appWrap').style.display = 'block';
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('onboardingScreen').classList.add('hidden');
@@ -1544,7 +1540,7 @@ async function loadUserData() {
 // ======= INIT =======
 window.onload = () => {
   // Force reload if cached version is outdated (PWA cache-bust)
-  const APP_VERSION = '17';
+  const APP_VERSION = '18';
   const cachedVer = localStorage.getItem('tirzAppVersion');
   if (cachedVer && cachedVer !== APP_VERSION) {
     localStorage.setItem('tirzAppVersion', APP_VERSION);
@@ -1556,22 +1552,37 @@ window.onload = () => {
   localStorage.setItem('tirzAppVersion', APP_VERSION);
   checkInstallScreen();
 
-  // onAuthStateChanged é o mais confiável — dispara em qualquer login
-  // Mas getRedirectResult() é OBRIGATÓRIO pra completar Google Sign-In
+  // Flag pra saber se getRedirectResult já terminou
+  let _redirectDone = false;
+  
   auth.getRedirectResult().then(function(result) {
+    _redirectDone = true;
     if (result && result.user) handleGoogleResult(result);
-  }).catch(function(){});
+  }).catch(function() {
+    _redirectDone = true;
+  });
 
   auth.onAuthStateChanged(function(user) {
     if (user) {
       loadAndUnlock();
     } else {
-      setTimeout(function() {
+      // Se tem cookie de redirect, espera o getRedirectResult terminar
+      // antes de mostrar onboarding (evita flash em Google Sign-In)
+      function checkAndShow() {
+        // Ainda esperando redirect? Cookie presente e getRedirectResult não terminou?
+        var redirectPending = document.cookie.indexOf('fb_redirect=1') !== -1;
+        if (redirectPending && !_redirectDone) {
+          // Espera mais 300ms e tenta de novo (máx ~5s total)
+          setTimeout(checkAndShow, 300);
+          return;
+        }
+        // Redirect terminou (ou não tinha redirect) — mostra onboarding/login
         if (!auth.currentUser) {
           var skip = initOnboarding();
           if (skip) initLogin();
         }
-      }, 800);
+      }
+      setTimeout(checkAndShow, 800);
     }
   });
 };
