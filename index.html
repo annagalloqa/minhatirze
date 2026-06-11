@@ -1573,11 +1573,18 @@ window.onload = () => {
         // Ainda esperando redirect? Cookie presente e getRedirectResult não terminou?
         var redirectPending = document.cookie.indexOf('fb_redirect=1') !== -1;
         if (redirectPending && !_redirectDone) {
-          // Espera mais 300ms e tenta de novo (máx ~5s total)
+          // Espera mais 300ms e tenta de novo
           setTimeout(checkAndShow, 300);
           return;
         }
-        // Redirect terminou (ou não tinha redirect) — mostra onboarding/login
+        // Cookie de redirect presente mas getRedirectResult já terminou
+        // (Firebase já processou internamente). Limpa cookie e NÃO mostra
+        // onboarding — onAuthStateChanged vai disparar com o usuário.
+        if (redirectPending) {
+          document.cookie = 'fb_redirect=1; path=/; max-age=0';
+          return;
+        }
+        // Sem redirect pendente — fluxo normal
         if (!auth.currentUser) {
           var skip = initOnboarding();
           if (skip) initLogin();
@@ -1641,7 +1648,7 @@ function showPage(name, navEl) {
   // Scroll ao topo ao trocar de aba
   window.scrollTo({ top: 0, behavior: 'instant' });
   if (name === 'historico') renderHistory();
-  if (name === 'sintomas') { renderSymptomHistory(); const now=new Date(); document.getElementById('symptomDate').value=now.toISOString().slice(0,10); }
+  if (name === 'sintomas') { renderSymptomHistory(); const now=new Date(); document.getElementById('symptomDate').value=now.toLocaleDateString('sv-SE'); }
   if (name === 'peso') { drawWeightChart(); renderWeightHistory(); updateGoalProgress(); loadGoalForm(); }
   if (name === 'resumo') updateSummary();
 }
