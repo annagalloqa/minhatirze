@@ -1556,11 +1556,15 @@ window.onload = () => {
   checkInstallScreen();
 
   // onAuthStateChanged é o mais confiável — dispara em qualquer login
+  // Mas getRedirectResult() é OBRIGATÓRIO pra completar Google Sign-In
+  auth.getRedirectResult().then(function(result) {
+    if (result && result.user) handleGoogleResult(result);
+  }).catch(function(){});
+
   auth.onAuthStateChanged(function(user) {
     if (user) {
       loadAndUnlock();
     } else {
-      // Pequeno delay pra evitar flash do onboarding durante redirect
       setTimeout(function() {
         if (!auth.currentUser) {
           var skip = initOnboarding();
