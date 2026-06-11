@@ -1400,9 +1400,27 @@ function resetAll() {
 
 function signInWithGoogle() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  // Cookie funciona cross-context (PWA + Safari)
-  document.cookie = 'fb_redirect=1; path=/; max-age=120; SameSite=Lax';
-  auth.signInWithRedirect(provider);
+  provider.setCustomParameters({ prompt: 'select_account' });
+  
+  // Tenta popup primeiro (funciona no Android e às vezes no iPhone)
+  auth.signInWithPopup(provider).then(function(result) {
+    if (result.user) handleGoogleResult(result);
+  }).catch(function(error) {
+    // Popup bloqueado ou fechado
+    if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      if (isIOS) {
+        // iPhone: popup não funciona no PWA, mostra cadastro email/senha
+        document.getElementById('loginError').textContent = 'Use email e senha para criar conta no iPhone 📱';
+        showLoginTab('signup');
+      } else {
+        // Android: fallback para redirect (funciona com Chrome Custom Tabs)
+        document.cookie = 'fb_redirect=1; path=/; max-age=120; SameSite=Lax';
+        auth.signInWithRedirect(provider);
+      }
+    } else {
+      document.getElementById('loginError').textContent = error.message;
+    }
+  });
 }
 
 // Handle redirect result when user returns — now in window.onload
@@ -1413,6 +1431,8 @@ function handleGoogleResult(result) {
     _userNameCache = user.displayName;
     saveUserName(user.displayName).catch(function(){});
   }
+  // Carrega dados em background e destrava
+  loadUserData().catch(function(){});
   unlockApp();
 }
 
