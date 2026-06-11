@@ -1376,13 +1376,16 @@ function handleLogin() {
 }
 
 async function loadAndUnlock() {
-  // NUNCA espera Firestore — destrava primeiro, carrega depois
+  // Destrava primeiro pra app aparecer rápido
   unlockApp();
   try {
     await loadUserData();
     if (localStorage.getItem('tirzApps') || localStorage.getItem('tirzWeights') || localStorage.getItem('tirzGoal')) {
       await migrateFromLocalStorage();
     }
+    // Depois de carregar dados, atualiza nome e interface
+    updateHeaderName();
+    updateSummary();
   } catch(e) {
     console.error('loadAndUnlock:', e);
   }
@@ -1454,13 +1457,16 @@ function unlockApp() {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   });
-  // Show name in header
-  const name = _userNameCache || localStorage.getItem('tirzName') || '';
-  if (name) {
-    const titleEl = document.querySelector('.app-title');
-    if (titleEl) titleEl.innerHTML = `minha <span>tirzepatida</span> <small style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-soft);font-style:normal;font-weight:500">· ${name}</small>`;
-  }
+  updateHeaderName();
   initApp();
+}
+
+function updateHeaderName() {
+  const name = _userNameCache || localStorage.getItem('tirzName') || '';
+  const titleEl = document.querySelector('.app-title');
+  if (name && titleEl) {
+    titleEl.innerHTML = `minha <span>tirzepatida</span> <small style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-soft);font-style:normal;font-weight:500">· ${name}</small>`;
+  }
 }
 
 function resetAll() {
