@@ -1065,8 +1065,8 @@ function checkInstallScreen() {
   }
   if (isStandalone) return;
   // Se voltou de redirect OAuth, não mostra instalação
-  if (sessionStorage.getItem('fb_redirect') === '1') {
-    sessionStorage.removeItem('fb_redirect');
+  if (document.cookie.indexOf('fb_redirect=1') !== -1) {
+    document.cookie = 'fb_redirect=1; path=/; max-age=0'; // apaga
     document.getElementById('installScreen').classList.add('hidden');
     return;
   }
@@ -1404,7 +1404,8 @@ function resetAll() {
 
 function signInWithGoogle() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  sessionStorage.setItem('fb_redirect', '1');
+  // Cookie funciona cross-context (PWA + Safari)
+  document.cookie = 'fb_redirect=1; path=/; max-age=120; SameSite=Lax';
   auth.signInWithRedirect(provider);
 }
 
