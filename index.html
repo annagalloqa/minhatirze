@@ -940,40 +940,19 @@ async function fbSet(field, value) {
   } catch(e) { console.error('fbSet', field, e); }
 }
 
-// Sub-collection helpers
-async function fbGetCol(col, fallback) {
-  try {
-    const u = auth.currentUser;
-    if (!u) return fallback;
-    const snap = await db.collection('users').doc(u.uid).collection(col)
-      .orderBy('__order', 'asc').get();
-    if (snap.empty) return fallback;
-    return snap.docs.map(d => d.data());
-  } catch(e) { console.error('fbGetCol', col, e); return fallback; }
-}
-
-async function fbAddCol(col, doc) {
-  try {
-    const u = auth.currentUser;
-    if (!u) return;
-    // Use timestamp as order key so we can sort later
-    await db.collection('users').doc(u.uid).collection(col)
-      .doc(String(doc.id || doc.date || Date.now()))
-      .set({ ...doc, __order: Date.now() });
-  } catch(e) { console.error('fbAddCol', col, e); }
-}
-
-async function fbDeleteCol(col, docId) {
-  try {
-    const u = auth.currentUser;
-    if (!u) return;
-    await db.collection('users').doc(u.uid).collection(col)
-      .doc(String(docId)).delete();
-  } catch(e) { console.error('fbDeleteCol', col, e); }
-}
+// (As antigas helpers de sub-coleções fbGetCol/fbAddCol/fbDeleteCol
+//  foram removidas — a migração agora grava no doc raiz, mesmo
+//  formato que loadUserData lê.)
 
 // ======= MIGRATION: localStorage → Firestore =======
+// Importante: grava no MESMO formato que loadUserData() lê
+// (campos no documento raiz: appsJson/weightsJson/symptomsJson
+// serializados como string JSON). Antes a migração gravava em
+// sub-coleções que o app nunca lia — dados migrados ficavam invisíveis.
 async function migrateFromLocalStorage() {
+  // Só roda uma vez na vida do usuário neste dispositivo
+  if (localStorage.getItem('tirzMigrated') === '1') return false;
+
   try {
     // Read old localStorage data
     const oldApps = JSON.parse(localStorage.getItem('tirzApps') || '[]');
@@ -985,65 +964,57 @@ async function migrateFromLocalStorage() {
     const oldAch = JSON.parse(localStorage.getItem('tirzAch') || '[]');
     const oldVial = parseInt(localStorage.getItem('tirzVial') || '0');
 
-    if (!oldApps.length && !oldWeights.length && !oldName) return false; // nothing to migrate
+    if (!oldApps.length && !oldWeights.length && !oldName) {
+      // Nada pra migrar — marca mesmo assim pra não reavaliar a cada boot
+      localStorage.setItem('tirzMigrated', '1');
+      return false;
+    }
 
     const doc = userDoc();
     if (!doc) return false;
 
-    // Save user profile
-    await doc.set({ name: oldName }, { merge: true });
+    // Antes de migrar, não sobrescreve dados que já existem na nuvem.
+    // (Usuário pode ter aberto o app em outro dispositivo e registrado algo.)
+    const existing = await doc.get();
+    const exData = existing.exists ? existing.data() : null;
 
-    // Save goal
-    if (oldGoal) await doc.set({ goal: oldGoal }, { merge: true });
+    const payload = {};
+    // name: só sobrescreve se a nuvem não tiver
+    if (oldName && !(exData && exData.name)) payload.name = oldName;
+    // Coleções: só migra se a nuvem estiver vazia — evita apagar dados novos
+    if (oldApps.length && !(exData && exData.appsJson)) {
+      // Normaliza ordem ao migrar (datetime descendente)
+      const sorted = [...oldApps].sort((a, b) =>
+        String(b.datetime).localeCompare(String(a.datetime)));
+      payload.appsJson = JSON.stringify(sorted);
+    }
+    if (oldWeights.length && !(exData && exData.weightsJson)) {
+      const sorted = [...oldWeights].sort((a, b) =>
+        String(a.date).localeCompare(String(b.date)));
+      payload.weightsJson = JSON.stringify(sorted);
+    }
+    if (oldSymptoms.length && !(exData && exData.symptomsJson)) {
+      const sorted = [...oldSymptoms].sort((a, b) =>
+        String(b.date).localeCompare(String(a.date)));
+      payload.symptomsJson = JSON.stringify(sorted);
+    }
+    if (oldGoal && !(exData && exData.goal)) payload.goal = JSON.stringify(oldGoal);
+    if (oldNextDose && !(exData && exData.nextDose)) payload.nextDose = oldNextDose;
+    if (oldAch.length && !(exData && exData.achievements)) {
+      payload.achievements = JSON.stringify(oldAch);
+    }
+    if (oldVial && !(exData && exData.vial)) payload.vial = oldVial;
 
-    // Save next dose
-    if (oldNextDose) await doc.set({ nextDose: oldNextDose }, { merge: true });
-
-    // Save achievements
-    if (oldAch.length) await doc.set({ achievements: oldAch }, { merge: true });
-
-    // Save vial
-    if (oldVial) await doc.set({ vial: oldVial }, { merge: true });
-
-    // Save apps
-    if (oldApps.length) {
-      const batch = db.batch();
-      oldApps.forEach(function(a) {
-        const ref = db.collection('users').doc(auth.currentUser.uid).collection('apps').doc(String(a.id));
-        batch.set(ref, { ...a, __order: new Date(a.datetime).getTime() });
-      });
-      await batch.commit();
+    if (Object.keys(payload).length) {
+      await doc.set(payload, { merge: true });
     }
 
-    // Save weights
-    if (oldWeights.length) {
-      const batch = db.batch();
-      oldWeights.forEach(function(w) {
-        const ref = db.collection('users').doc(auth.currentUser.uid).collection('weights').doc(w.date);
-        batch.set(ref, { ...w, __order: new Date(w.date + 'T12:00:00').getTime() });
-      });
-      await batch.commit();
-    }
+    // Limpa localStorage APÓS gravar com sucesso na nuvem
+    ['tirzApps','tirzWeights','tirzGoal','tirzSymptoms',
+     'tirzNextDose','tirzAch','tirzVial','tirzName'].forEach(k => localStorage.removeItem(k));
 
-    // Save symptoms
-    if (oldSymptoms.length) {
-      const batch = db.batch();
-      oldSymptoms.forEach(function(s) {
-        const ref = db.collection('users').doc(auth.currentUser.uid).collection('symptoms').doc(s.date);
-        batch.set(ref, { ...s, __order: new Date(s.date + 'T12:00:00').getTime() });
-      });
-      await batch.commit();
-    }
-
-    // Clear localStorage after successful migration
-    localStorage.removeItem('tirzApps');
-    localStorage.removeItem('tirzWeights');
-    localStorage.removeItem('tirzGoal');
-    localStorage.removeItem('tirzSymptoms');
-    localStorage.removeItem('tirzNextDose');
-    localStorage.removeItem('tirzAch');
-    localStorage.removeItem('tirzVial');
-
+    // Flag: nunca mais tenta migrar neste dispositivo
+    localStorage.setItem('tirzMigrated', '1');
     return true;
   } catch(e) {
     console.error('Migration error:', e);
@@ -1469,13 +1440,6 @@ function updateHeaderName() {
   }
 }
 
-function resetAll() {
-  if (!confirm('Isso vai resetar apenas sua senha e nome. Seus dados de saúde continuam salvos. Continuar?')) return;
-  localStorage.removeItem(STORED_PIN_KEY);
-  localStorage.removeItem(STORED_NAME_KEY);
-  location.reload();
-}
-
 // ======= DOSE CHIPS =======
 function buildDoseChips() {
   const wrap = document.getElementById('doseChipsWrap');
@@ -1515,20 +1479,20 @@ function getAchievements() { return _achievementsCache; }
 
 // Async savers (write to Firestore + update cache)
 async function saveApps(a) {
-  _appsCache = a;
-  try { await fbSet('appsJson', JSON.stringify(a)); } catch(e) { console.error(e); }
+  _appsCache = normalizeApps(a);
+  try { await fbSet('appsJson', JSON.stringify(_appsCache)); } catch(e) { console.error(e); }
 }
 async function saveWeights(w) {
-  _weightsCache = w;
-  try { await fbSet('weightsJson', JSON.stringify(w)); } catch(e) { console.error(e); }
+  _weightsCache = normalizeWeights(w);
+  try { await fbSet('weightsJson', JSON.stringify(_weightsCache)); } catch(e) { console.error(e); }
 }
 async function saveGoalData(g) {
   _goalCache = g;
   try { await fbSet('goal', JSON.stringify(g)); } catch(e) { console.error(e); }
 }
 async function saveSymptomData(s) {
-  _symptomsCache = s;
-  try { await fbSet('symptomsJson', JSON.stringify(s)); } catch(e) { console.error(e); }
+  _symptomsCache = normalizeSymptoms(s);
+  try { await fbSet('symptomsJson', JSON.stringify(_symptomsCache)); } catch(e) { console.error(e); }
 }
 async function saveAchievements(a) {
   _achievementsCache = a;
@@ -1545,6 +1509,21 @@ async function saveNextDose(d) {
 async function saveVial(v) {
   _vialCache = v;
   try { await fbSet('vial', v); } catch(e) { console.error(e); }
+}
+
+// ===== Normalização de coleções =====
+// Aplicadas sempre que o cache é populado ou salvo. Assim TODO o app
+// pode confiar que getApps()[0] = aplicação mais recente (datetime desc),
+// getWeights() cresce por data, e getSymptoms() é desc por data.
+// Retorna novo array — nunca muta a entrada.
+function normalizeApps(arr) {
+  return [...arr].sort((a, b) => String(b.datetime).localeCompare(String(a.datetime)));
+}
+function normalizeWeights(arr) {
+  return [...arr].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+function normalizeSymptoms(arr) {
+  return [...arr].sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 
 // Load ALL user data from Firestore into memory cache
@@ -1565,9 +1544,9 @@ async function loadUserData() {
     _vialCache = d.vial || 0;
     _achievementsCache = (typeof d.achievements === 'string' ? JSON.parse(d.achievements) : d.achievements) || [];
     _goalCache = (typeof d.goal === 'string' ? JSON.parse(d.goal) : d.goal) || null;
-    _appsCache = (typeof d.appsJson === 'string' ? JSON.parse(d.appsJson) : d.appsJson) || [];
-    _weightsCache = (typeof d.weightsJson === 'string' ? JSON.parse(d.weightsJson) : d.weightsJson) || [];
-    _symptomsCache = (typeof d.symptomsJson === 'string' ? JSON.parse(d.symptomsJson) : d.symptomsJson) || [];
+    _appsCache = normalizeApps((typeof d.appsJson === 'string' ? JSON.parse(d.appsJson) : d.appsJson) || []);
+    _weightsCache = normalizeWeights((typeof d.weightsJson === 'string' ? JSON.parse(d.weightsJson) : d.weightsJson) || []);
+    _symptomsCache = normalizeSymptoms((typeof d.symptomsJson === 'string' ? JSON.parse(d.symptomsJson) : d.symptomsJson) || []);
   } catch(e) { console.error('loadUserData:', e); }
 }
 
@@ -1626,12 +1605,11 @@ window.onload = () => {
 };
 
 function initApp() {
+  // Cache já vem ordenado por normalizeApps(): apps[0] = mais recente.
+  // Não usar .sort() aqui — mutaria _appsCache e quebraria renderHistory.
   const apps = getApps();
-  if (apps.length > 0) {
-    const lastDose = apps.sort((a, b) => b.datetime.localeCompare(a.datetime))[0].dose;
-    if (lastDose) {
-      currentDose = lastDose;
-    }
+  if (apps.length > 0 && apps[0].dose) {
+    currentDose = apps[0].dose;
   }
   buildDoseChips();
   document.getElementById('doseDisplay').textContent = currentDose.toFixed(1);
