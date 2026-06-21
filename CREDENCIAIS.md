@@ -44,9 +44,11 @@ const firebaseConfig = {
 
 ### Configuração:
 - [x] Criar projeto no Firebase Console
-- [ ] Ativar **Authentication** → Email/Senha
-- [ ] Ativar **Firestore Database** → modo produção, `southamerica-east1`
+- [x] Ativar **Authentication** → Email/Senha
+- [x] Ativar **Authentication** → Google
+- [x] Ativar **Firestore Database** → modo produção, `southamerica-east1`
 - [x] Registrar **App Web** → config obtida
+- [x] **Regras de segurança** → publicadas
 
 ---
 
